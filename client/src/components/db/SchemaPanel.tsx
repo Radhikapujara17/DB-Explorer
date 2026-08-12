@@ -1,17 +1,27 @@
 import { inferIndexes, inferSchema, typeColor } from "@/lib/db-schema";
 import { formatValue, type Doc } from "@/lib/db-data";
 import { cn } from "@/lib/utils";
+import { ArrowLeft } from "lucide-react";
 
-type Props = { docs: Doc[]; collectionName: string; fields: string[] };
+type Props = { docs: Doc[]; collectionName: string; fields: string[]; onBack?: () => void };
 
-export function SchemaPanel({ docs, collectionName, fields }: Props) {
+export function SchemaPanel({ docs, collectionName, fields, onBack }: Props) {
   const schema = inferSchema(docs);
   const indexes = inferIndexes(collectionName, fields, docs.length);
 
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+      {onBack && (
+        <div>
+          <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <ArrowLeft className="size-4" /> Back to table
+          </button>
+        </div>
+      )}
       <section>
-        <h2 className="mb-1 text-sm font-semibold">Schema auto-discovery</h2>
+        <h2 className="mb-1 text-sm font-semibold">
+          Schema auto-discovery for <span className="text-primary">{collectionName}</span>
+        </h2>
         <p className="mb-4 text-xs text-muted-foreground">
           Inferred from the first {Math.min(docs.length, 100)} documents — field paths, BSON types
           and how often each field is populated.
@@ -73,7 +83,9 @@ export function SchemaPanel({ docs, collectionName, fields }: Props) {
       </section>
 
       <section>
-        <h2 className="mb-1 text-sm font-semibold">Index inspector</h2>
+        <h2 className="mb-1 text-sm font-semibold">
+          Index inspector for <span className="text-primary">{collectionName}</span>
+        </h2>
         <p className="mb-4 text-xs text-muted-foreground">
           Key directions, uniqueness constraints and how often each index is hit.
         </p>

@@ -8,6 +8,7 @@ type Props = {
   activeDb: string;
   activeCollection: string;
   onSelect: (db: string, collection: string) => void;
+  onCreateCollection?: (db: string) => void;
   onClose?: () => void;
   node?: string;
   mode?: string;
@@ -18,6 +19,7 @@ export function DbSidebar({
   activeDb,
   activeCollection,
   onSelect,
+  onCreateCollection,
   onClose,
   node,
   mode,
@@ -75,9 +77,20 @@ export function DbSidebar({
                     )}
                   >
                     <span className="truncate">{db.name}</span>
-                    <ChevronDown
-                      className={cn("size-4 shrink-0 transition-transform", !isOpen && "-rotate-90")}
-                    />
+                    <div className="flex items-center gap-2">
+                      {isOpen && onCreateCollection && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onCreateCollection(db.name); }} 
+                          className="text-muted-foreground hover:text-primary transition-colors"
+                          title="Create Collection"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        </button>
+                      )}
+                      <ChevronDown
+                        className={cn("size-4 shrink-0 transition-transform", !isOpen && "-rotate-90")}
+                      />
+                    </div>
                   </button>
 
                   {isOpen && (

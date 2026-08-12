@@ -50,6 +50,7 @@ export function buildFilterObject(conditions: Condition[]): any {
 export function useMongoDB(uri: string) {
   const [databases, setDatabases] = useState<Database[]>([]);
   const [loadingDb, setLoadingDb] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     if (!uri) return;
@@ -95,7 +96,7 @@ export function useMongoDB(uri: string) {
         setLoadingDb(false);
       })
       .catch(() => setLoadingDb(false));
-  }, [uri]);
+  }, [uri, refreshTick]);
 
-  return { databases, loadingDb };
+  return { databases, loadingDb, refresh: () => setRefreshTick(t => t + 1) };
 }

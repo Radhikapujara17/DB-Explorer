@@ -117,7 +117,7 @@ function Explorer() {
   const isMobile = useIsMobile();
   const { theme, setTheme } = useTheme();
   const { profiles, setProfiles, active: connection, activeId, setActiveId } = useConnections();
-  const { databases, loadingDb } = useMongoDB(connection.uri);
+  const { databases, loadingDb, refreshDbs } = useMongoDB(connection.uri);
   const [view, setView] = useState<ViewMode>("table");
   const [viewTouched, setViewTouched] = useState(false);
   const [search, setSearch] = useState("");
@@ -131,6 +131,7 @@ function Explorer() {
   const [conditions, setConditions] = useState<Condition[]>([
     { id: "c1", field: "status", operator: "eq", value: "" },
   ]);
+  const [refreshTick, setRefreshTick] = useState(0);
   const [rawQuery, setRawQuery] = useState("{}");
   const [projection, setProjection] = useState("{}");
   const [sortSpec, setSortSpec] = useState("{}");
@@ -198,7 +199,7 @@ function Explorer() {
       }
     };
     fetchDocs();
-  }, [active.db, active.collection, applied, rows, page, sort, advanced, rawQuery, projection, search, connection.uri, db, collection]);
+  }, [active.db, active.collection, applied, rows, page, sort, advanced, rawQuery, projection, search, connection.uri, db, collection, refreshTick]);
 
   // Fetch schema fields
   useEffect(() => {
@@ -243,15 +244,24 @@ function Explorer() {
     action();
   };
 
+  const switchTab = (tab: { db: string; collection: string }) => {
+    setActive(tab);
+    setAdvanced(false);
+    setApplied([]);
+    setPage(1);
+    setSort(null);
+    setRawQuery("{}");
+    setProjection("{}");
+    setSortSpec("{}");
+    setConditions([{ id: crypto.randomUUID(), field: "_id", operator: "eq", value: "" }]);
+  };
+
   const openCollection = (dbName: string, collectionName: string) => {
     const tab = { db: dbName, collection: collectionName };
     setTabs((prev) =>
       prev.some((t) => t.db === dbName && t.collection === collectionName) ? prev : [...prev, tab],
     );
-    setActive(tab);
-    setApplied([]);
-    setPage(1);
-    setSort(null);
+    switchTab(tab);
     if (db) {
       const c = db.collections.find((x) => x.name === collectionName);
       if (c && c.fields && c.fields.length > 0) {
@@ -259,12 +269,7 @@ function Explorer() {
       } else {
          setConditions([{ id: crypto.randomUUID(), field: "_id", operator: "eq", value: "" }]);
       }
-    } else {
-      setConditions([{ id: crypto.randomUUID(), field: "_id", operator: "eq", value: "" }]);
     }
-    setRawQuery("{}");
-    setProjection("{}");
-    setSortSpec("{}");
   };
 
   const runQuery = () => {
@@ -307,9 +312,7 @@ function Explorer() {
       if (data.success) {
         setNotice("Document saved.");
         setEditing(null);
-        // We'd ideally re-fetch here, handled by modifying a refresh trigger state if needed.
-        // Or simply toggling page state to force re-fetch.
-        setPage(p => p); 
+        setRefreshTick(t => t + 1);
       } else {
         setNotice("Failed to save: " + data.error);
       }
@@ -330,7 +333,7 @@ function Explorer() {
         const data = await res.json();
         if (data.success) {
           setNotice("Document deleted.");
-          setPage(p => p);
+          setRefreshTick(t => t + 1);
         }
       } catch (e) {
         setNotice("Failed to delete document.");
@@ -348,6 +351,26 @@ function Explorer() {
           activeDb={active.db}
           activeCollection={active.collection}
           onSelect={openCollection}
+          onCreateCollection={async (dbName) => {
+            const name = window.prompt(`Enter new collection name for ${dbName}:`);
+            if (!name) return;
+            try {
+              const res = await fetch(`/api/collections/${dbName}/create`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-mongo-uri": connection.uri },
+                body: JSON.stringify({ collectionName: name })
+              });
+              const data = await res.json();
+              if (data.success) {
+                setNotice(`Collection ${name} created.`);
+                refreshDbs();
+              } else {
+                setNotice("Failed to create collection.");
+              }
+            } catch {
+              setNotice("Error creating collection.");
+            }
+          }}
           node={connection.uri.replace(/^mongodb(\+srv)?:\/\//, "")}
           mode={readOnly ? "Read-only guard" : `Read / write · ${queryTime} ms`}
         />
@@ -368,6 +391,26 @@ function Explorer() {
                 setNavOpen(false);
               }}
               onClose={() => setNavOpen(false)}
+              onCreateCollection={async (dbName) => {
+                const name = window.prompt(`Enter new collection name for ${dbName}:`);
+                if (!name) return;
+                try {
+                  const res = await fetch(`/api/collections/${dbName}/create`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-mongo-uri": connection.uri },
+                    body: JSON.stringify({ collectionName: name })
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setNotice(`Collection ${name} created.`);
+                    refreshDbs();
+                  } else {
+                    setNotice("Failed to create collection.");
+                  }
+                } catch {
+                  setNotice("Error creating collection.");
+                }
+              }}
               node={connection.uri.replace(/^mongodb(\+srv)?:\/\//, "")}
               mode={readOnly ? "Read-only guard" : `Read / write · ${queryTime} ms`}
             />
@@ -633,6 +676,7 @@ function Explorer() {
               docs={docs}
               collectionName={collection.name}
               fields={displayFields}
+              onBack={() => setWorkspace("documents")}
             />
           )}
 

@@ -129,9 +129,27 @@ export function ResultsView({
 
   if (view === "json") {
     return (
-      <pre className="overflow-auto p-4 sm:p-6 lg:p-8 font-mono text-xs leading-relaxed">
-        {JSON.stringify(docs, null, 2)}
-      </pre>
+      <div className="space-y-4 p-4 sm:p-6 lg:p-8">
+        {docs.map((doc, i) => (
+          <div key={i} className="rounded-lg border border-border">
+            <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
+              <span className="font-mono text-xs text-muted-foreground">
+                {String(doc["_id"] ?? i)}
+              </span>
+              <RowActions
+                doc={doc}
+                onView={onView}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                readOnly={readOnly}
+              />
+            </div>
+            <pre className="overflow-auto p-4 font-mono text-xs leading-relaxed">
+              {JSON.stringify(doc, null, 2)}
+            </pre>
+          </div>
+        ))}
+      </div>
     );
   }
 
