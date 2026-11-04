@@ -58,6 +58,10 @@ export const updateDocument = async (req: Request, res: Response): Promise<void>
     }
 
     const result = await mongoManager.updateDocument(connectionUri, dbName, collectionName, filter, update);
+    if (result.matchedCount === 0) {
+      res.status(404).json({ success: false, error: 'Document not found or no document matched the filter.' });
+      return;
+    }
     res.json({ success: true, ...result });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });

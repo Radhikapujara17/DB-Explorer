@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="theme-mongo">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DB Explorer — Interactive Filter & UI Redesign Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset & Base Variables */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root, html[data-theme="theme-mongo"] {
+      --bg-dark: #07090e;
+      --bg-panel: #0d121d;
+      --bg-card: #131a29;
+      --bg-hover: #1c263b;
+      --bg-active: #24324d;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(16, 185, 129, 0.35);
+      --accent-emerald: #10b981;
+      --accent-cyan: #06b6d4;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+
+    html[data-theme="theme-light"] {
+      --bg-dark: #f8fafc;
+      --bg-panel: #ffffff;
+      --bg-card: #f1f5f9;
+      --bg-hover: #e2e8f0;
+      --bg-active: #cbd5e1;
+      --border-color: rgba(0, 0, 0, 0.08);
+      --border-glow: rgba(16, 185, 129, 0.4);
+      --accent-emerald: #059669;
+      --accent-cyan: #0284c7;
+      --accent-purple: #7c3aed;
+      --accent-amber: #d97706;
+      --accent-rose: #e11d48;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+    }
+
+    html[data-theme="theme-vscode"] {
+      --bg-dark: #181818;
+      --bg-panel: #1f1f1f;
+      --bg-card: #252526;
+      --bg-hover: #2a2d2e;
+      --bg-active: #37373d;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-glow: rgba(0, 122, 204, 0.4);
+      --accent-emerald: #007acc;
+      --accent-cyan: #4ec9b0;
+      --accent-purple: #c586c0;
+      --accent-amber: #dcdcaa;
+      --accent-rose: #f44747;
+      --text-primary: #cccccc;
+      --text-secondary: #9cdcfe;
+      --text-muted: #858585;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Banner */
+    .promo-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.15) 50%, rgba(139, 92, 246, 0.15) 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .promo-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .promo-logo {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.625rem;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .promo-badge {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Navigation & Layout Tabs */
+    .suggestion-nav {
+      background-color: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.15s ease;
+    }
+
+    .pill-btn:hover {
+      background-color: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .pill-btn.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent-emerald);
+      color: var(--accent-emerald);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .pill-btn.active-purple {
+      background: rgba(139, 92, 246, 0.15);
+      border-color: var(--accent-purple);
+      color: var(--accent-purple);
+      box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
+    }
+
+    .pill-btn.active-rose {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: var(--accent-rose);
+      color: var(--accent-rose);
+    }
+
+    /* Live Screen Space Meter */
+    .height-meter-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .meter-bar {
+      width: 120px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .meter-fill-chrome {
+      background: var(--accent-rose);
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .meter-fill-data {
+      background: var(--accent-emerald);
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    /* Main Window Frame */
+    .mockup-frame {
+      margin: 1.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      background-color: var(--bg-panel);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 640px;
+      position: relative;
+    }
+
+    .mockup-window-header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      flex-shrink: 0;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 6px;
+    }
+    .traffic-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .mockup-body {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .mockup-sidebar {
+      width: 220px;
+      background-color: var(--bg-panel);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-db-title {
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-item {
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .sidebar-item:hover {
+      background-color: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .sidebar-item.active {
+      background: rgba(16, 185, 129, 0.1);
+      border-left-color: var(--accent-emerald);
+      color: var(--accent-emerald);
+      font-weight: 600;
+    }
+
+    /* Main Content */
+    .mockup-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background-color: var(--bg-dark);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ========================================================
+       PRO FILTER BAR & COMPONENT STYLES
+       ======================================================== */
+    .unified-toolbar {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      z-index: 10;
+    }
+
+    /* The Working Filter Box */
+    .filter-wrapper {
+      position: relative;
+      flex: 1;
+      max-width: 580px;
+      display: flex;
+      align-items: center;
+    }
+
+    .compact-filter-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      padding: 0.3rem 0.5rem;
+      width: 100%;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .compact-filter-bar:focus-within {
+      border-color: var(--accent-emerald);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    .filter-label {
+      color: var(--accent-emerald);
+      font-size: 0.6875rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+    }
+
+    .compact-filter-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-primary);
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .compact-btn {
+      padding: 0.3rem 0.625rem;
+      border-radius: 0.375rem;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .compact-btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+    }
+    .compact-btn-primary:hover {
+      background: #10b981;
+    }
+
+    .compact-btn-secondary {
+      background: var(--bg-panel);
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+    }
+    .compact-btn-secondary:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .compact-btn-active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent-emerald);
+      color: var(--accent-emerald);
+    }
+
+    /* Expandable Advanced Filter Drawer */
+    .filter-drawer {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      min-width: 520px;
+      margin-top: 6px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 0.625rem;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+      padding: 1rem;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      animation: fadeIn 0.15s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .drawer-section-title {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-rule-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-card);
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .drawer-select, .drawer-input {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 0.35rem 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+
+    .drawer-select:focus, .drawer-input:focus {
+      border-color: var(--accent-emerald);
+    }
+
+    /* Quick Filter Chips Bar */
+    .quick-chips-bar {
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.4rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow-x: auto;
+    }
+
+    .chip-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 9999px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.6875rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .chip-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--border-glow);
+    }
+
+    .chip-btn.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent-emerald);
+      color: var(--accent-emerald);
+      font-weight: 600;
+    }
+
+    /* Active Filter Indicator Badge */
+    .active-filter-banner {
+      background: rgba(16, 185, 129, 0.08);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+      padding: 0.35rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.6875rem;
+      color: var(--accent-emerald);
+    }
+
+    /* Table Styles */
+    .mockup-table-container {
+      flex: 1;
+      overflow: auto;
+      padding: 0.75rem 1rem;
+    }
+
+    .mockup-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+
+    .mockup-table th {
+      background-color: var(--bg-panel);
+      padding: 0.625rem 0.875rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 0.625rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .mockup-table td {
+      padding: 0.625rem 0.875rem;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+    }
+
+    .mockup-table tr:hover td {
+      background-color: var(--bg-hover);
+      cursor: pointer;
+    }
+
+    .mockup-table tr.selected td {
+      background-color: rgba(16, 185, 129, 0.12);
+    }
+
+    .id-tag {
+      color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.1);
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.25rem;
+      font-size: 0.6875rem;
+    }
+
+    .date-tag {
+      color: var(--accent-purple);
+      font-size: 0.6875rem;
+    }
+
+    .match-highlight {
+      background-color: rgba(245, 158, 11, 0.25);
+      color: var(--accent-amber);
+      font-weight: 700;
+      padding: 0 0.2rem;
+      border-radius: 0.2rem;
+    }
+
+    /* Status Badge */
+    .stat-badge {
+      font-size: 0.6875rem;
+      font-family: var(--font-mono);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.375rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .stat-highlight {
+      color: var(--accent-emerald);
+      font-weight: 700;
+    }
+
+    /* Master-Detail Split Pane */
+    .inspector-pane {
+      width: 320px;
+      border-left: 1px solid var(--border-color);
+      background-color: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .inspector-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .inspector-json {
+      padding: 0.875rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-primary);
+      overflow-y: auto;
+      flex: 1;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      background-color: var(--bg-dark);
+      margin: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Walkthrough Guidance Cards */
+    .guidance-container {
+      margin: 0 1.5rem 2rem 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .guide-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .guide-num {
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-emerald);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .guide-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+
+    .guide-body {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .code-pill {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.25rem;
+      color: var(--accent-cyan);
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Banner -->
+  <header class="promo-banner">
+    <div class="promo-title">
+      <div class="promo-logo">DB</div>
+      <div>
+        <h1 style="font-size: 1.125rem; font-weight: 800;">
+          DB Explorer — Interactive Working Filter &amp; UI Prototype
+        </h1>
+        <p style="font-size: 0.75rem; color: var(--text-secondary);">
+          Collection: <code style="color: var(--accent-emerald); font-family: var(--font-mono);">todo-app &gt; to-dos</code> &bull; Test live filtering directly below!
+        </p>
+      </div>
+    </div>
+
+    <!-- Theme & Quick Reset -->
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <span style="font-size: 0.75rem; color: var(--text-muted);">Theme:</span>
+      <select id="themeSelector" onchange="changeTheme(this.value)" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; outline: none;">
+        <option value="theme-mongo">MongoDB Emerald Dark</option>
+        <option value="theme-vscode">VS Code Midnight</option>
+        <option value="theme-light">Studio Clean Light</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Interactive Suggestion Navigation -->
+  <section class="suggestion-nav">
+    <div class="tab-pills">
+      <button class="pill-btn active" id="btn-layout1" onclick="switchLayout('layout1')">
+        <span class="promo-badge" style="padding: 0.1rem 0.3rem;">★ Best</span>
+        <span>1. Unified Slim Filter Bar (Try Filtering Live!)</span>
+      </button>
+
+      <button class="pill-btn" id="btn-layout2" onclick="switchLayout('layout2')">
+        <span>2. Master-Detail Split Pane</span>
+      </button>
+
+      <button class="pill-btn" id="btn-layout-old" onclick="switchLayout('old')">
+        <span style="color: var(--accent-rose); font-weight: bold;">✕</span>
+        <span>Why Data Was Buried (Before Redesign)</span>
+      </button>
+    </div>
+
+    <div class="height-meter-container">
+      <span style="color: var(--text-muted);">Visible Data Area:</span>
+      <div class="meter-bar">
+        <div id="meterChrome" class="meter-fill-chrome" style="width: 15%;"></div>
+        <div id="meterData" class="meter-fill-data" style="width: 85%;"></div>
+      </div>
+      <span id="meterText" style="font-weight: 700; color: var(--accent-emerald); font-family: var(--font-mono);">
+        85% Data Space!
+      </span>
+    </div>
+  </section>
+
+  <!-- Live Mockup Window -->
+  <main class="mockup-frame">
+    <!-- Window Bar -->
+    <div class="mockup-window-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div class="traffic-lights">
+          <div class="traffic-dot dot-red"></div>
+          <div class="traffic-dot dot-yellow"></div>
+          <div class="traffic-dot dot-green"></div>
+        </div>
+        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); font-family: var(--font-mono);">
+          MongoDB: localhost:27017 &bull; todo-app / to-dos
+        </span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span class="promo-badge" id="layoutBadge">Live Working Prototype</span>
+      </div>
+    </div>
+
+    <div class="mockup-body">
+      <!-- Left DB Sidebar -->
+      <aside class="mockup-sidebar">
+        <div class="sidebar-db-title">
+          <span>Databases</span>
+          <span style="color: var(--accent-emerald);">9</span>
+        </div>
+        <div class="sidebar-item">
+          <span>ecommerce_db</span>
+          <span style="font-size: 0.625rem; color: var(--text-muted);">3 col</span>
+        </div>
+        <div class="sidebar-item active">
+          <span>&bull; todo-app</span>
+          <span style="font-size: 0.625rem; color: var(--accent-emerald); font-weight: 700;">2 col</span>
+        </div>
+        <div style="padding-left: 1.25rem; background: rgba(0,0,0,0.2);">
+          <div class="sidebar-item active" style="border: none; padding: 0.35rem 0.5rem; font-size: 0.6875rem;">
+            <span>to-dos</span>
+            <span id="sidebarCount" style="color: var(--accent-emerald); font-weight: 700;">2 docs</span>
+          </div>
+          <div class="sidebar-item" style="border: none; padding: 0.35rem 0.5rem; font-size: 0.6875rem;">
+            <span>users</span>
+            <span style="color: var(--text-muted);">8 docs</span>
+          </div>
+        </div>
+        <div class="sidebar-item">
+          <span>rentnest</span>
+          <span style="font-size: 0.625rem; color: var(--text-muted);">6 col</span>
+        </div>
+        <div class="sidebar-item">
+          <span>analytics_db</span>
+          <span style="font-size: 0.625rem; color: var(--text-muted);">1 col</span>
+        </div>
+      </aside>
+
+      <!-- Main Data Pane -->
+      <section class="mockup-content">
+
+        <!-- ========================================================
+             LAYOUT 1: UNIFIED PRO BAR (INTERACTIVE WORKING FILTER)
+             ======================================================== -->
+        <div id="view-layout1" style="display: flex; flex-direction: column; height: 100%;">
+          
+          <!-- Unified Slim Toolbar: Replaces 4 stacked bars into 1 single row -->
+          <div class="unified-toolbar">
+            
+            <!-- Collection info badge -->
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <span style="font-weight: 800; font-size: 0.8125rem; color: var(--text-primary);">to-dos</span>
+              <span class="stat-badge"><span id="docCountBadge" class="stat-highlight">2</span> docs</span>
+              <span class="stat-badge" style="display: none sm:inline-flex;">4.0 KB</span>
+            </div>
+
+            <!-- Working Filter Input & Action Buttons -->
+            <div class="filter-wrapper">
+              <div class="compact-filter-bar">
+                <span class="filter-label">Filter:</span>
+                
+                <!-- Filter input field: supports JSON or text search -->
+                <input
+                  type="text"
+                  id="mainFilterInput"
+                  class="compact-filter-input"
+                  placeholder='Try: Sample, test, or { "title": "Sample Item1" }'
+                  onkeydown="if(event.key==='Enter') applyMainFilter()"
+                />
+
+                <!-- Find button -->
+                <button class="compact-btn compact-btn-primary" onclick="applyMainFilter()">
+                  <span>Find</span>
+                </button>
+
+                <!-- Reset button -->
+                <button class="compact-btn compact-btn-secondary" onclick="resetFilter()" title="Clear filter">
+                  <span>Reset</span>
+                </button>
+
+                <!-- Options / Advanced Drawer toggle button -->
+                <button id="optionsBtn" class="compact-btn compact-btn-secondary" onclick="toggleFilterDrawer()">
+                  <span>Options &#9662;</span>
+                </button>
+              </div>
+
+              <!-- Advanced Filter & Visual Query Builder Drawer -->
+              <div id="filterDrawer" class="filter-drawer hidden">
+                <div class="drawer-section-title">
+                  <span>Visual Query Builder</span>
+                  <span style="font-size: 0.625rem; color: var(--accent-emerald);">Auto-syncs with Filter box</span>
+                </div>
+
+                <!-- Visual Rule Builder Row -->
+                <div class="drawer-rule-row">
+                  <select id="ruleField" class="drawer-select" style="width: 130px;">
+                    <option value="title">Field: title</option>
+                    <option value="description">Field: description</option>
+                    <option value="createdAt">Field: createdAt</option>
+                    <option value="_id">Field: _id</option>
+                  </select>
+
+                  <select id="ruleOp" class="drawer-select" style="width: 140px;">
+                    <option value="$regex">contains ($regex)</option>
+                    <option value="$eq">equals ($eq)</option>
+                    <option value="$ne">not equals ($ne)</option>
+                    <option value="$exists">field exists ($exists)</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    id="ruleVal"
+                    class="drawer-input"
+                    placeholder="Search value..."
+                    style="flex: 1;"
+                    onkeydown="if(event.key==='Enter') applyVisualRule()"
+                  />
+
+                  <button class="compact-btn compact-btn-primary" onclick="applyVisualRule()">
+                    Apply
+                  </button>
+                </div>
+
+                <!-- Sort & Projection Controls -->
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                    <label style="font-size: 0.625rem; color: var(--text-muted); text-transform: uppercase;">Sort Order:</label>
+                    <select id="ruleSort" class="drawer-select" onchange="applySort(this.value)">
+                      <option value="default">Default Order</option>
+                      <option value="title_asc">Title: A &rarr; Z</option>
+                      <option value="title_desc">Title: Z &rarr; A</option>
+                    </select>
+                  </div>
+
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+                    <label style="font-size: 0.625rem; color: var(--text-muted); text-transform: uppercase;">Projection (Fields):</label>
+                    <input type="text" class="drawer-input" placeholder='{ "description": 0 }' value="All Fields" readonly style="opacity: 0.7;">
+                  </div>
+                </div>
+
+                <!-- Drawer Footer Actions -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+                  <span style="font-size: 0.6875rem; color: var(--text-muted);">Press Enter or click Apply to run</span>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <button class="compact-btn compact-btn-secondary" onclick="toggleFilterDrawer(false)">Close</button>
+                    <button class="compact-btn compact-btn-primary" onclick="applyVisualRule()">Apply Filter</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- View Modes & Action Buttons -->
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 0.375rem; padding: 0.15rem; display: flex; gap: 0.2rem;">
+                <button style="padding: 0.25rem 0.5rem; background: var(--bg-panel); border: none; border-radius: 0.25rem; color: var(--text-primary); font-size: 0.6875rem; font-weight: 600; cursor: pointer;">Table</button>
+                <button style="padding: 0.25rem 0.5rem; background: transparent; border: none; border-radius: 0.25rem; color: var(--text-muted); font-size: 0.6875rem; cursor: pointer;">Cards</button>
+                <button style="padding: 0.25rem 0.5rem; background: transparent; border: none; border-radius: 0.25rem; color: var(--text-muted); font-size: 0.6875rem; cursor: pointer;">JSON</button>
+              </div>
+
+              <button class="compact-btn compact-btn-primary">+ New Doc</button>
+            </div>
+          </div>
+
+          <!-- Quick Filter Preset Chips (Clickable) -->
+          <div class="quick-chips-bar">
+            <span style="font-size: 0.6875rem; color: var(--text-muted); font-weight: 600;">Quick Presets:</span>
+            <button class="chip-btn active" id="chip-all" onclick="applyPreset('all')">All To-Dos (2)</button>
+            <button class="chip-btn" id="chip-sample" onclick="applyPreset('sample')">title = "Sample Item1"</button>
+            <button class="chip-btn" id="chip-test" onclick="applyPreset('test')">title contains "test"</button>
+            <button class="chip-btn" id="chip-hasdesc" onclick="applyPreset('hasdesc')">Has description</button>
+          </div>
+
+          <!-- Active Filter Banner (Visible when a filter is applied) -->
+          <div id="activeFilterBanner" class="active-filter-banner hidden">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-weight: 700;">&bull; Active Filter:</span>
+              <code id="activeFilterCode" class="code-pill">{}</code>
+              <span id="activeFilterMatchText" style="color: var(--text-muted);">(Showing 2 docs)</span>
+            </div>
+            <button onclick="resetFilter()" style="background: none; border: none; color: var(--accent-rose); font-size: 0.6875rem; font-weight: 700; cursor: pointer;">Clear Filter &times;</button>
+          </div>
+
+          <!-- The Table: INSTANTLY VISIBLE ON HOME PAGE WITHOUT SCROLLING! -->
+          <div class="mockup-table-container">
+            <div style="margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.6875rem; color: var(--text-muted);">
+              <span>Showing <strong id="visibleCount" style="color: var(--text-primary);">2</strong> of 2 documents &bull; Execution: <span id="execLatency" style="color: var(--accent-cyan); font-weight: 600;">3 ms</span></span>
+              <span style="color: var(--accent-emerald); font-weight: 600;">&check; Data is front-and-center (No vertical clutter)</span>
+            </div>
+
+            <table class="mockup-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;"><input type="checkbox"></th>
+                  <th style="width: 100px; text-align: center;">Actions</th>
+                  <th>_id</th>
+                  <th>title</th>
+                  <th>description</th>
+                  <th>createdAt</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                <!-- Dynamically populated by JavaScript -->
+              </tbody>
+            </table>
+
+            <!-- Empty State if filter yields 0 matches -->
+            <div id="noMatchState" class="hidden" style="text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 0.8125rem;">
+              <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔍</div>
+              <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem;">No documents matched your filter</div>
+              <p style="font-size: 0.75rem; margin-bottom: 1rem;">Try adjusting your query or click Reset below.</p>
+              <button class="compact-btn compact-btn-primary" onclick="resetFilter()">Reset Filter</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================
+             LAYOUT 2: MASTER-DETAIL SPLIT PANE
+             ======================================================== -->
+        <div id="view-layout2" class="hidden" style="display: flex; flex-direction: row; height: 100%;">
+          <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
+            <div class="unified-toolbar">
+              <span style="font-weight: 700; font-size: 0.8125rem;">to-dos (<span id="splitCount">2</span>)</span>
+              <div class="compact-filter-bar" style="max-width: 320px;">
+                <input type="text" id="splitFilterInput" class="compact-filter-input" placeholder="Type filter..." oninput="syncFromSplit(this.value)">
+                <button class="compact-btn compact-btn-primary" onclick="applySplitFilter()">Find</button>
+              </div>
+              <button class="compact-btn compact-btn-secondary" onclick="resetFilter()">Reset</button>
+            </div>
+
+            <div class="mockup-table-container">
+              <table class="mockup-table">
+                <thead>
+                  <tr>
+                    <th>_id</th>
+                    <th>title</th>
+                    <th>description</th>
+                  </tr>
+                </thead>
+                <tbody id="splitTableBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right Document Inspector -->
+          <aside class="inspector-pane">
+            <div class="inspector-header">
+              <span>Document Inspector</span>
+              <button class="compact-btn compact-btn-primary" style="font-size: 0.625rem;">Edit JSON</button>
+            </div>
+            <div id="splitInspectorJson" class="inspector-json">Click a row to inspect full JSON details</div>
+          </aside>
+        </div>
+
+        <!-- ========================================================
+             LAYOUT OLD: WHY DATA WAS BURIED (BEFORE REDESIGN)
+             ======================================================== -->
+        <div id="view-old" class="hidden" style="overflow-y: auto; height: 100%;">
+          <div style="background: rgba(244, 63, 94, 0.12); padding: 0.75rem 1rem; border-bottom: 2px dashed rgba(244, 63, 94, 0.5); font-size: 0.75rem; color: var(--accent-rose); font-weight: 700;">
+            ⚠️ CURRENT PROBLEM: 4 layers of controls &amp; cards occupy ~440px of vertical space before the data table even begins!
+          </div>
+
+          <!-- Layer 1 -->
+          <div style="padding: 0.5rem 1rem; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); font-size: 0.6875rem; color: var(--text-secondary); display: flex; gap: 0.5rem;">
+            <span style="color: var(--accent-rose); font-weight: 700;">LAYER 1: Sub-Header Bar (52px)</span>
+            <span>[Document Explorer] [Aggregation] [New Collection] [Explain Query] [Diagnostics] [Snippets] [Ctrl+K]</span>
+          </div>
+
+          <!-- Layer 2 -->
+          <div style="padding: 0.75rem 1rem; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.6875rem;">
+              <span style="color: var(--accent-rose); font-weight: 700;">LAYER 2: Query Builder Panel (115px - Expanded by Default)</span>
+              <span>[Visual Builder] [Raw Mongo Query] [Run Query]</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <input style="background: var(--bg-card); border: 1px solid var(--border-color); color: #fff; padding: 4px; font-size: 0.6875rem; flex: 1;" value="Field name (e.g. status)">
+              <input style="background: var(--bg-card); border: 1px solid var(--border-color); color: #fff; padding: 4px; font-size: 0.6875rem; width: 120px;" value="Equals ($eq)">
+              <input style="background: var(--bg-card); border: 1px solid var(--border-color); color: #fff; padding: 4px; font-size: 0.6875rem; flex: 1;" value="Value">
+              <button style="background: #ef4444; color: #fff; border: none; padding: 2px 8px; border-radius: 4px;">&times;</button>
+            </div>
+          </div>
+
+          <!-- Layer 3 -->
+          <div style="padding: 0.5rem 1rem; font-size: 0.6875rem; color: var(--accent-rose); font-weight: 700;">
+            LAYER 3: 4 Bulky Metric Cards (85px)
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; padding: 0.5rem 1rem; background: var(--bg-card); border-bottom: 1px solid var(--border-color);">
+            <div style="background: var(--bg-panel); padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-color); font-size: 0.6875rem;">Total Documents: <strong>2</strong></div>
+            <div style="background: var(--bg-panel); padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-color); font-size: 0.6875rem;">Execution: <strong>5 ms</strong></div>
+            <div style="background: var(--bg-panel); padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-color); font-size: 0.6875rem;">Storage Size: <strong>4.0 KB</strong></div>
+            <div style="background: var(--bg-panel); padding: 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border-color); font-size: 0.6875rem;">Indexes: <strong>1</strong></div>
+          </div>
+
+          <!-- Layer 4 -->
+          <div style="padding: 0.5rem 1rem; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); font-size: 0.6875rem; color: var(--accent-rose); font-weight: 700;">
+            LAYER 4: View Toolbar (50px) — [Table] [Cards] [Tree] [JSON] &bull; Search: [____] &bull; [Export] [New Doc]
+          </div>
+
+          <!-- Squeezed Table Area -->
+          <div style="padding: 1rem; background: rgba(0, 0, 0, 0.4);">
+            <div style="color: var(--accent-rose); font-weight: 700; margin-bottom: 0.5rem; font-size: 0.75rem;">
+              &darr; Squeezed Table Area (Pushed down or cut off on laptop screens!):
+            </div>
+            <table class="mockup-table">
+              <thead>
+                <tr>
+                  <th>_id</th>
+                  <th>title</th>
+                  <th>description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>6a6b8073de079ba953a38a4e</td>
+                  <td>Sample Item1</td>
+                  <td>desc 1</td>
+                </tr>
+                <tr>
+                  <td>6a6b808ede079ba953a38a4f</td>
+                  <td>test 22</td>
+                  <td>desc 2</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- Detailed Step-by-Step Guide: "Where & How to Apply Filters" -->
+  <section class="guidance-container">
+    <div class="guide-card">
+      <div class="guide-header">
+        <div class="guide-num">1</div>
+        <span>Where is the Filter Placed?</span>
+      </div>
+      <p class="guide-body">
+        The filter is positioned <strong>directly in the main toolbar above the table</strong>. Instead of taking up 120px with multiple input rows, it sits cleanly alongside the collection name, leaving <strong>85% of vertical screen height for table rows</strong>.
+      </p>
+    </div>
+
+    <div class="guide-card">
+      <div class="guide-header">
+        <div class="guide-num">2</div>
+        <span>Method A: Fast Inline Query</span>
+      </div>
+      <p class="guide-body">
+        Type keywords or valid MongoDB JSON directly into the input bar:
+        <br><code class="code-pill">Sample</code> or <code class="code-pill">{ "title": "test 22" }</code>
+        <br>Press <strong>Enter</strong> or click <strong>Find</strong> to instantly filter rows.
+      </p>
+    </div>
+
+    <div class="guide-card">
+      <div class="guide-header">
+        <div class="guide-num">3</div>
+        <span>Method B: Visual Rule Builder</span>
+      </div>
+      <p class="guide-body">
+        Click <strong>"Options ▾"</strong> to open a clean dropdown without pushing the table down. Pick <strong>Field</strong>, <strong>Operator</strong> (<code class="code-pill">$regex</code>, <code class="code-pill">$eq</code>, etc.), and <strong>Value</strong>. Click <strong>Apply</strong> to filter.
+      </p>
+    </div>
+
+    <div class="guide-card">
+      <div class="guide-header">
+        <div class="guide-num">4</div>
+        <span>Method C: 1-Click Quick Presets</span>
+      </div>
+      <p class="guide-body">
+        Click any preset chip above the table (e.g. <span class="code-pill">title = "Sample Item1"</span> or <span class="code-pill">Has description</span>). The query runs immediately with one click!
+      </p>
+    </div>
+  </section>
+
+  <!-- Interactive JavaScript -->
+  <script>
+    // Full dataset matching todo-app / to-dos
+    const INITIAL_DOCS = [
+      {
+        "_id": "6a6b8073de079ba953a38a4e",
+        "title": "Sample Item1",
+        "description": "desc 1",
+        "createdAt": "2026-08-04T20:13:41.003Z"
+      },
+      {
+        "_id": "6a6b808ede079ba953a38a4f",
+        "title": "test 22",
+        "description": "desc 2",
+        "createdAt": null
+      }
+    ];
+
+    let currentDocs = [...INITIAL_DOCS];
+    let activeFilterText = "";
+    let selectedDocIndex = 0;
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      const splitTbody = document.getElementById('splitTableBody');
+      const noMatchState = document.getElementById('noMatchState');
+      const visibleCount = document.getElementById('visibleCount');
+      const docCountBadge = document.getElementById('docCountBadge');
+      const sidebarCount = document.getElementById('sidebarCount');
+      const splitCount = document.getElementById('splitCount');
+
+      visibleCount.innerText = currentDocs.length;
+      docCountBadge.innerText = currentDocs.length;
+      sidebarCount.innerText = `${currentDocs.length} docs`;
+      splitCount.innerText = currentDocs.length;
+
+      if (currentDocs.length === 0) {
+        tbody.innerHTML = '';
+        splitTbody.innerHTML = '';
+        noMatchState.classList.remove('hidden');
+        return;
+      }
+
+      noMatchState.classList.add('hidden');
+
+      // Populate Layout 1 table
+      tbody.innerHTML = currentDocs.map((doc, idx) => {
+        const isSelected = idx === selectedDocIndex;
+        const idShort = doc._id;
+        const titleHtml = highlightText(doc.title);
+        const descHtml = highlightText(doc.description);
+        const dateHtml = doc.createdAt ? `<span class="date-tag">${doc.createdAt}</span>` : `<span style="color: var(--text-muted);">&mdash;</span>`;
+
+        return `
+          <tr class="${isSelected ? 'selected' : ''}" onclick="selectRow(${idx})">
+            <td style="text-align: center;"><input type="checkbox" ${isSelected ? 'checked' : ''}></td>
+            <td style="text-align: center;">
+              <span style="color: var(--accent-cyan); cursor: pointer; margin-right: 0.4rem;">Inspect</span>
+              <span style="color: var(--accent-emerald); cursor: pointer; margin-right: 0.4rem;">Edit</span>
+              <span style="color: var(--accent-rose); cursor: pointer;">Del</span>
+            </td>
+            <td><span class="id-tag">${idShort}</span></td>
+            <td style="font-weight: 600; color: #fff;">${titleHtml}</td>
+            <td>${descHtml}</td>
+            <td>${dateHtml}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Populate Layout 2 table
+      splitTbody.innerHTML = currentDocs.map((doc, idx) => {
+        const isSelected = idx === selectedDocIndex;
+        return `
+          <tr class="${isSelected ? 'selected' : ''}" onclick="selectRow(${idx})">
+            <td><span class="id-tag">${doc._id.slice(-8)}</span></td>
+            <td style="font-weight: 600; color: #fff;">${doc.title}</td>
+            <td>${doc.description}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // Update inspector in split layout
+      if (currentDocs[selectedDocIndex]) {
+        document.getElementById('splitInspectorJson').innerText = JSON.stringify(currentDocs[selectedDocIndex], null, 2);
+      }
+    }
+
+    function highlightText(text) {
+      if (!text || !activeFilterText) return text || '';
+      const clean = activeFilterText.replace(/[{}"':]/g, '').trim();
+      if (!clean) return text;
+      const regex = new RegExp(`(${clean})`, 'gi');
+      return text.replace(regex, '<span class="match-highlight">$1</span>');
+    }
+
+    function applyMainFilter() {
+      const input = document.getElementById('mainFilterInput').value.trim();
+      executeFilter(input);
+    }
+
+    function executeFilter(queryStr) {
+      activeFilterText = queryStr;
+      toggleFilterDrawer(false);
+
+      const banner = document.getElementById('activeFilterBanner');
+      const bannerCode = document.getElementById('activeFilterCode');
+      const bannerMatch = document.getElementById('activeFilterMatchText');
+
+      if (!queryStr || queryStr === '{}') {
+        currentDocs = [...INITIAL_DOCS];
+        banner.classList.add('hidden');
+        resetChips();
+        document.getElementById('chip-all').classList.add('active');
+        renderTable();
+        return;
+      }
+
+      // Check if user entered JSON: { "title": "Sample Item1" }
+      try {
+        if (queryStr.startsWith('{') && queryStr.endsWith('}')) {
+          const parsed = JSON.parse(queryStr);
+          currentDocs = INITIAL_DOCS.filter(doc => {
+            for (const key of Object.keys(parsed)) {
+              const rule = parsed[key];
+              if (typeof rule === 'object' && rule.$regex) {
+                const reg = new RegExp(rule.$regex, 'i');
+                if (!reg.test(String(doc[key] || ''))) return false;
+              } else if (doc[key] !== rule) {
+                return false;
+              }
+            }
+            return true;
+          });
+        } else {
+          // Plain keyword search across all fields
+          const lower = queryStr.toLowerCase();
+          currentDocs = INITIAL_DOCS.filter(doc =>
+            JSON.stringify(doc).toLowerCase().includes(lower)
+          );
+        }
+      } catch {
+        // Fallback to text match
+        const lower = queryStr.toLowerCase();
+        currentDocs = INITIAL_DOCS.filter(doc =>
+          JSON.stringify(doc).toLowerCase().includes(lower)
+        );
+      }
+
+      selectedDocIndex = 0;
+      bannerCode.innerText = queryStr;
+      bannerMatch.innerText = `(Showing ${currentDocs.length} matching of 2 docs)`;
+      banner.classList.remove('hidden');
+
+      // Random realistic simulated latency: 2 - 5 ms
+      document.getElementById('execLatency').innerText = `${Math.floor(Math.random() * 4 + 2)} ms`;
+      renderTable();
+    }
+
+    function resetFilter() {
+      document.getElementById('mainFilterInput').value = '';
+      document.getElementById('splitFilterInput').value = '';
+      executeFilter('');
+    }
+
+    function applyPreset(type) {
+      resetChips();
+      if (type === 'all') {
+        document.getElementById('chip-all').classList.add('active');
+        document.getElementById('mainFilterInput').value = '{}';
+        executeFilter('');
+      } else if (type === 'sample') {
+        document.getElementById('chip-sample').classList.add('active');
+        const q = '{ "title": "Sample Item1" }';
+        document.getElementById('mainFilterInput').value = q;
+        executeFilter(q);
+      } else if (type === 'test') {
+        document.getElementById('chip-test').classList.add('active');
+        const q = '{ "title": { "$regex": "test" } }';
+        document.getElementById('mainFilterInput').value = q;
+        executeFilter(q);
+      } else if (type === 'hasdesc') {
+        document.getElementById('chip-hasdesc').classList.add('active');
+        const q = '{ "description": { "$exists": true } }';
+        document.getElementById('mainFilterInput').value = q;
+        executeFilter(q);
+      }
+    }
+
+    function resetChips() {
+      ['chip-all', 'chip-sample', 'chip-test', 'chip-hasdesc'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+      });
+    }
+
+    function toggleFilterDrawer(forcedState) {
+      const drawer = document.getElementById('filterDrawer');
+      const btn = document.getElementById('optionsBtn');
+      const isHidden = drawer.classList.contains('hidden');
+      const newState = forcedState !== undefined ? !forcedState : isHidden;
+
+      if (newState) {
+        drawer.classList.remove('hidden');
+        btn.classList.add('compact-btn-active');
+      } else {
+        drawer.classList.add('hidden');
+        btn.classList.remove('compact-btn-active');
+      }
+    }
+
+    function applyVisualRule() {
+      const field = document.getElementById('ruleField').value;
+      const op = document.getElementById('ruleOp').value;
+      const val = document.getElementById('ruleVal').value.trim();
+
+      if (!val) {
+        alert('Please enter a search value in the visual builder');
+        return;
+      }
+
+      let q = '';
+      if (op === '$regex') {
+        q = `{ "${field}": { "$regex": "${val}" } }`;
+      } else if (op === '$eq') {
+        q = `{ "${field}": "${val}" }`;
+      } else if (op === '$ne') {
+        q = `{ "${field}": { "$ne": "${val}" } }`;
+      } else if (op === '$exists') {
+        q = `{ "${field}": { "$exists": true } }`;
+      }
+
+      document.getElementById('mainFilterInput').value = q;
+      executeFilter(q);
+    }
+
+    function applySort(sortVal) {
+      if (sortVal === 'title_asc') {
+        currentDocs.sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sortVal === 'title_desc') {
+        currentDocs.sort((a, b) => b.title.localeCompare(a.title));
+      } else {
+        currentDocs = [...INITIAL_DOCS];
+      }
+      renderTable();
+    }
+
+    function selectRow(idx) {
+      selectedDocIndex = idx;
+      renderTable();
+    }
+
+    function syncFromSplit(val) {
+      document.getElementById('mainFilterInput').value = val;
+    }
+
+    function applySplitFilter() {
+      const val = document.getElementById('splitFilterInput').value;
+      executeFilter(val);
+    }
+
+    function switchLayout(layoutId) {
+      document.getElementById('view-layout1').classList.add('hidden');
+      document.getElementById('view-layout2').classList.add('hidden');
+      document.getElementById('view-old').classList.add('hidden');
+
+      document.getElementById('btn-layout1').classList.remove('active');
+      document.getElementById('btn-layout2').classList.remove('active', 'active-purple');
+      document.getElementById('btn-layout-old').classList.remove('active-rose');
+
+      const meterChrome = document.getElementById('meterChrome');
+      const meterData = document.getElementById('meterData');
+      const meterText = document.getElementById('meterText');
+      const layoutBadge = document.getElementById('layoutBadge');
+
+      if (layoutId === 'layout1') {
+        document.getElementById('view-layout1').classList.remove('hidden');
+        document.getElementById('btn-layout1').classList.add('active');
+        meterChrome.style.width = '15%';
+        meterData.style.width = '85%';
+        meterText.innerText = '85% Data Space!';
+        meterText.style.color = 'var(--accent-emerald)';
+        layoutBadge.innerText = 'Interactive Working Prototype';
+      } else if (layoutId === 'layout2') {
+        document.getElementById('view-layout2').classList.remove('hidden');
+        document.getElementById('btn-layout2').classList.add('active-purple');
+        meterChrome.style.width = '18%';
+        meterData.style.width = '82%';
+        meterText.innerText = '82% (Master-Detail Pane)';
+        meterText.style.color = 'var(--accent-purple)';
+        layoutBadge.innerText = 'Master-Detail Split Pane';
+      } else if (layoutId === 'old') {
+        document.getElementById('view-old').classList.remove('hidden');
+        document.getElementById('btn-layout-old').classList.add('active-rose');
+        meterChrome.style.width = '64%';
+        meterData.style.width = '36%';
+        meterText.innerText = '36% (64% Clutter)';
+        meterText.style.color = 'var(--accent-rose)';
+        layoutBadge.innerText = 'Before Redesign';
+      }
+    }
+
+    function changeTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+
+    // Initialize on load
+    window.onload = function() {
+      renderTable();
+    };
+  </script>
+</body>
+</html>

@@ -64,6 +64,12 @@ export const AppContent: React.FC = () => {
     sort: {}
   });
 
+  // Reset pagination and query filter whenever collection or db changes
+  useEffect(() => {
+    setPage(1);
+    setActiveQuery({ filter: {}, projection: {}, sort: {} });
+  }, [selectedDb, selectedCollection]);
+
   // Fetch documents whenever selected collection, page, limit, or query changes
   useEffect(() => {
     if (isConnected && selectedDb && selectedCollection) {
@@ -317,6 +323,8 @@ export const AppContent: React.FC = () => {
       <SchemaInspectorModal
         isOpen={isSchemaModalOpen}
         onClose={() => setIsSchemaModalOpen(false)}
+        dbName={selectedDb}
+        collectionName={selectedCollection}
       />
 
       <CreateCollectionModal
@@ -338,7 +346,10 @@ export const AppContent: React.FC = () => {
 
       <DocumentModal
         isOpen={isDocModalOpen}
-        onClose={() => setIsDocModalOpen(false)}
+        onClose={() => {
+          setIsDocModalOpen(false);
+          setSelectedDocToEdit(null);
+        }}
         onSuccess={fetchDocuments}
         initialDocument={selectedDocToEdit}
       />

@@ -70,7 +70,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({ label, value, path, isLast }
           <span className="db-icon-xs" />
         )}
 
-        <span className="db-font-semibold db-text-secondary">{label}:</span>
+        <span className="db-font-semibold db-text-secondary pl-2">{label}:</span>
 
         <span className={`db-badge ${getTypeColor(getType(value))}`}>
           {getType(value)}

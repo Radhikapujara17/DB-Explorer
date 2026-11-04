@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Collection Search */}
-      <div className="p-2 border-b border-slate-800">
+      <div className="p-2 border-b border-[var(--border-color)]">
         <div className="relative">
           <Search className="db-icon-sm db-icon-muted absolute left-2.5 top-2.5" />
           <input
@@ -159,7 +159,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Database Footer Stats */}
       {selectedDb && (
-        <div className="p-3 border-t border-slate-800 bg-slate-950 db-text-xs db-text-muted space-y-1.5">
+        <div className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-panel)] db-text-xs db-text-muted space-y-1.5">
           <div className="db-row-start db-justify-between">
             <span className="db-row-start db-text-secondary">
               <HardDrive className="db-icon-sm db-icon-muted" /> Storage:
@@ -186,7 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onCloseMobile} />
-          <div className="fixed inset-y-0 left-0 w-72 bg-slate-950 border-r border-slate-800 z-50 animate-fade-in shadow-2xl">
+          <div className="fixed inset-y-0 left-0 w-72 bg-[var(--bg-panel)] border-r border-[var(--border-color)] z-50 animate-fade-in shadow-2xl">
             {sidebarContent}
           </div>
         </div>
@@ -199,21 +199,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <ChevronRight className="db-icon db-icon-emerald" />
             </button>
 
-            <div className="h-[1px] w-8 bg-slate-800" />
+            <div className="h-[1px] w-8 bg-[var(--border-color)]" />
 
             <button onClick={onOpenConnectionModal} className="db-btn db-btn-secondary p-2.5">
               <Server className="db-icon db-icon-emerald" />
             </button>
 
             {isConnected && (
-              <div className="db-flex db-flex-col db-items-center db-gap-2 overflow-y-auto db-full-w px-1">
+              <div className="db-flex db-flex-col db-items-center gap-2 overflow-y-auto db-full-w px-1">
                 {filteredCollections.map(c => (
                   <button
                     key={c.name}
                     onClick={() => selectCollection(c.name)}
-                    className={`p-2 rounded-lg db-text-xs db-font-mono transition ${
-                      selectedCollection === c.name ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400 hover:bg-slate-900'
-                    }`}
+                    className={`p-2 rounded-lg db-text-xs db-font-mono transition ${selectedCollection === c.name ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400 hover:bg-[var(--bg-hover)]'
+                      }`}
                     title={`${c.name} (${c.count} docs)`}
                   >
                     <Table className="db-icon" />

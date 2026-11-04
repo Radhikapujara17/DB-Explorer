@@ -16,11 +16,11 @@ const STAGE_TEMPLATES: Record<string, string> = {
 };
 
 export const AggregationBuilder: React.FC = () => {
-  const { activeProfile, selectedDb, selectedCollection } = useConnection();
+  const { activeProfile, selectedDb, selectedCollection, theme } = useConnection();
 
   const [stages, setStages] = useState<string[]>([
-    STAGE_TEMPLATES.$match,
-    STAGE_TEMPLATES.$group
+    STAGE_TEMPLATES['$match']!,
+    STAGE_TEMPLATES['$group']!
   ]);
 
   const [executing, setExecuting] = useState(false);
@@ -147,7 +147,7 @@ export const AggregationBuilder: React.FC = () => {
           )}
 
           {stages.map((stageStr, idx) => (
-            <div key={idx} className="db-card-box db-overflow-hidden">
+            <div key={idx} className="db-card-box db-overflow-hidden flex flex-col gap-2">
               <div className="db-row-start db-justify-between db-border-b db-py-1">
                 <span className="db-text-xs db-font-mono db-font-semibold db-text-purple db-row-start">
                   <span className="db-badge db-badge-purple">
@@ -165,14 +165,23 @@ export const AggregationBuilder: React.FC = () => {
                 </button>
               </div>
 
-              <div className="db-full-h">
+              <div className="h-44 border border-[var(--border-color)] rounded-lg overflow-hidden bg-[var(--bg-card)]">
                 <Editor
                   height="100%"
                   defaultLanguage="json"
-                  theme="vs-dark"
+                  theme={theme === 'theme-light' ? 'light' : 'vs-dark'}
                   value={stageStr}
                   onChange={(v) => handleUpdateStage(idx, v || '')}
-                  options={{ minimap: { enabled: false }, fontSize: 12, fontFamily: 'Fira Code', lineNumbers: 'off' }}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 12,
+                    fontFamily: 'Fira Code, monospace',
+                    lineNumbers: 'on',
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    tabSize: 2,
+                    padding: { top: 6, bottom: 6 }
+                  }}
                 />
               </div>
             </div>

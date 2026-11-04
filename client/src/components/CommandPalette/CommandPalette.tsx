@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Database, Table, Sparkles, Command, ArrowRight, Shield, Layers } from 'lucide-react';
+import { Search, Database, Table, Sparkles, Command, ArrowRight, Shield, Layers, X } from 'lucide-react';
 import { useConnection } from '../../context/ConnectionContext';
 
 interface CommandPaletteProps {
@@ -92,7 +92,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     <div className="db-modal-overlay">
       <div className="db-modal-box animate-fade-in db-flex db-flex-col">
         {/* Input header */}
-        <div className="db-modal-header">
+        <div className="db-modal-header gap-2">
           <Search className="db-icon-sm db-icon-emerald" />
           <input
             type="text"
@@ -102,7 +102,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             onChange={(e) => { setSearch(e.target.value); setSelectedIndex(0); }}
             className="db-input db-full-w db-text-xs"
           />
-          <span className="db-badge db-badge-cyan">ESC to close</span>
+          <button
+            onClick={onClose}
+            className="db-btn db-btn-secondary db-p-1"
+            title="Close modal (Esc)"
+          >
+            <X className="db-icon-sm" />
+          </button>
         </div>
 
         {/* Results */}
@@ -117,9 +123,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 key={action.id}
                 onClick={action.handler}
                 onMouseEnter={() => setSelectedIndex(idx)}
-                className={`db-command-item ${
-                  selectedIndex === idx ? 'active' : ''
-                }`}
+                className={`db-command-item ${selectedIndex === idx ? 'active' : ''
+                  }`}
               >
                 <div className="db-row-start">
                   {action.icon}

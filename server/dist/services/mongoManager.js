@@ -3,6 +3,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MongoConnectionManager = void 0;
 const mongodb_1 = require("mongodb");
 const ejson_js_1 = require("../utils/ejson.js");
+function normalizeFilter(filter) {
+    if (!filter || typeof filter !== 'object')
+        return filter;
+    const clone = Array.isArray(filter) ? [...filter] : { ...filter };
+    for (const key of Object.keys(clone)) {
+        const val = clone[key];
+        if (key === '_id') {
+            if (typeof val === 'string' && /^[0-9a-fA-F]{24}$/.test(val)) {
+                clone._id = new mongodb_1.ObjectId(val);
+            }
+            else if (val && typeof val === 'object' && val.$oid && typeof val.$oid === 'string') {
+                clone._id = new mongodb_1.ObjectId(val.$oid);
+            }
+        }
+        else if (val && typeof val === 'object' && !(val instanceof mongodb_1.ObjectId) && !(val instanceof Date)) {
+            clone[key] = normalizeFilter(val);
+        }
+    }
+    return clone;
+}
 class MongoConnectionManager {
     static instance;
     clients = new Map();
@@ -169,13 +189,14 @@ class MongoConnectionManager {
         const client = await this.getClient(connectionUri);
         const db = client.db(dbName);
         const collection = db.collection(collectionName);
-        const filter = options.filter || {};
-        const projection = options.projection || {};
-        const sort = options.sort || {};
+        const rawFilter = options.filter || {};
+        const parsedFilter = normalizeFilter((0, ejson_js_1.parseEJSON)(typeof rawFilter === 'string' ? rawFilter : JSON.stringify(rawFilter)));
+        const projection = (0, ejson_js_1.parseEJSON)(typeof options.projection === 'string' ? options.projection : JSON.stringify(options.projection || {}));
+        const sort = (0, ejson_js_1.parseEJSON)(typeof options.sort === 'string' ? options.sort : JSON.stringify(options.sort || {}));
         const limit = options.limit ?? 50;
         const skip = options.skip ?? 0;
-        const totalCount = await collection.countDocuments(filter);
-        let cursor = collection.find(filter, { projection });
+        const totalCount = await collection.countDocuments(parsedFilter);
+        let cursor = collection.find(parsedFilter, { projection });
         if (Object.keys(sort).length > 0)
             cursor = cursor.sort(sort);
         if (skip > 0)
@@ -208,19 +229,36 @@ class MongoConnectionManager {
         const client = await this.getClient(connectionUri);
         const db = client.db(dbName);
         const collection = db.collection(collectionName);
-        const parsedFilter = (0, ejson_js_1.parseEJSON)(typeof filter === 'string' ? filter : JSON.stringify(filter));
+        const rawFilter = (0, ejson_js_1.parseEJSON)(typeof filter === 'string' ? filter : JSON.stringify(filter));
+        const parsedFilter = normalizeFilter(rawFilter);
         const parsedUpdate = (0, ejson_js_1.parseEJSON)(typeof update === 'string' ? update : JSON.stringify(update));
-        const updateQuery = Object.keys(parsedUpdate).some(k => k.startsWith('$'))
-            ? parsedUpdate
-            : { $set: parsedUpdate };
-        const res = await collection.updateOne(parsedFilter, updateQuery);
-        return { modifiedCount: res.modifiedCount, matchedCount: res.matchedCount };
+        let updateQuery;
+        if (Object.keys(parsedUpdate).some(k => k.startsWith('$'))) {
+            updateQuery = { ...parsedUpdate };
+            if (updateQuery.$set && updateQuery.$set._id) {
+                delete updateQuery.$set._id;
+            }
+            if (updateQuery.$set && Object.keys(updateQuery.$set).length === 0) {
+                delete updateQuery.$set;
+            }
+            if (Object.keys(updateQuery).length === 0) {
+                return { modifiedCount: 0, matchedCount: 1 };
+            }
+            const res = await collection.updateOne(parsedFilter, updateQuery);
+            return { modifiedCount: res.modifiedCount, matchedCount: res.matchedCount };
+        }
+        else {
+            const { _id, ...replacement } = parsedUpdate;
+            const res = await collection.replaceOne(parsedFilter, replacement);
+            return { modifiedCount: res.modifiedCount, matchedCount: res.matchedCount };
+        }
     }
     async deleteDocument(connectionUri, dbName, collectionName, filter) {
         const client = await this.getClient(connectionUri);
         const db = client.db(dbName);
         const collection = db.collection(collectionName);
-        const parsedFilter = (0, ejson_js_1.parseEJSON)(typeof filter === 'string' ? filter : JSON.stringify(filter));
+        const rawFilter = (0, ejson_js_1.parseEJSON)(typeof filter === 'string' ? filter : JSON.stringify(filter));
+        const parsedFilter = normalizeFilter(rawFilter);
         const res = await collection.deleteOne(parsedFilter);
         return { deletedCount: res.deletedCount };
     }

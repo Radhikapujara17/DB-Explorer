@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Table as TableIcon, Network, Code2, Plus, Download, ChevronLeft, ChevronRight, Edit2, Trash2, ShieldAlert, FileSpreadsheet, RefreshCw, LayoutGrid, Copy, Check, Eye, Search, Layers, HardDrive, Clock, CheckSquare, Square, Sparkles } from 'lucide-react';
+import { Table as TableIcon, Network, Code2, Plus, Download, ChevronLeft, ChevronRight, Edit2, Trash2, ShieldAlert, FileSpreadsheet, RefreshCw, LayoutGrid, Copy, Check, Eye, Search, Layers, HardDrive, Clock, CheckSquare, Square, Sparkles, BarChart3, X } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { TreeNode } from './TreeView';
 import { useConnection } from '../../context/ConnectionContext';
@@ -33,12 +33,13 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   onOpenCreateModal,
   onDeleteDoc
 }) => {
-  const { readOnlyMode, selectedCollection, collections } = useConnection();
+  const { readOnlyMode, selectedCollection, collections, theme } = useConnection();
   const [viewMode, setViewMode] = useState<'table' | 'grid' | 'tree' | 'raw'>('table');
   const [selectedCellDoc, setSelectedCellDoc] = useState<any | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [clientSearch, setClientSearch] = useState('');
   const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const [showDetailedStats, setShowDetailedStats] = useState(false);
 
   const currentCollStats = collections.find(c => c.name === selectedCollection);
 
@@ -147,10 +148,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   };
 
   return (
-    <div className="db-content-pane">
-      {/* Top Metric Stat Cards Bar */}
-      {selectedCollection && (
-        <div className="db-metrics-grid">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[var(--bg-dark)]">
+      {/* Top Metric Stat Cards Bar (Collapsible - Saves 85px of vertical space!) */}
+      {selectedCollection && showDetailedStats && (
+        <div className="db-metrics-grid animate-fade-in">
           <div className="db-stat-card">
             <div>
               <span className="db-stat-label">Total Documents</span>
@@ -193,90 +194,130 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         </div>
       )}
 
-      {/* Toolbar Controls Bar */}
-      <div className="db-toolbar">
-        {/* View Switcher & Search */}
-        <div className="db-row-start">
+      {/* Toolbar Controls Bar - Unified & Highly Responsive */}
+      <div className="db-toolbar py-1 px-3">
+        {/* Left: View Switcher, Stats toggle & Quick client search */}
+        <div className="db-row-start gap-2 flex-wrap">
           <div className="db-pill-switcher">
             <button
               onClick={() => setViewMode('table')}
               className={`db-pill-btn ${viewMode === 'table' ? 'active' : ''}`}
+              title="Table Grid View"
             >
-              <TableIcon className="w-3.5 h-3.5 text-emerald-400" /> Table
+              <TableIcon className="w-3.5 h-3.5 text-emerald-400" /> <span className="hidden sm:inline">Table</span>
             </button>
 
             <button
               onClick={() => setViewMode('grid')}
               className={`db-pill-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              title="Card Grid View"
             >
-              <LayoutGrid className="w-3.5 h-3.5 text-amber-400" /> Cards
+              <LayoutGrid className="w-3.5 h-3.5 text-amber-400" /> <span className="hidden sm:inline">Cards</span>
             </button>
 
             <button
               onClick={() => setViewMode('tree')}
               className={`db-pill-btn ${viewMode === 'tree' ? 'active' : ''}`}
+              title="Tree View"
             >
-              <Network className="w-3.5 h-3.5 text-cyan-400" /> Tree
+              <Network className="w-3.5 h-3.5 text-cyan-400" /> <span className="hidden sm:inline">Tree</span>
             </button>
 
             <button
               onClick={() => setViewMode('raw')}
               className={`db-pill-btn ${viewMode === 'raw' ? 'active' : ''}`}
+              title="Monaco Raw JSON"
             >
-              <Code2 className="w-3.5 h-3.5 text-purple-400" /> Monaco JSON
+              <Code2 className="w-3.5 h-3.5 text-purple-400" /> <span className="hidden sm:inline">JSON</span>
             </button>
           </div>
 
-          {/* Quick Client Search */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-slate-500" />
+          {/* Detailed Stats Toggle Button */}
+          {selectedCollection && (
+            <button
+              onClick={() => setShowDetailedStats(!showDetailedStats)}
+              className={`db-btn db-text-xs py-1 px-2 ${showDetailedStats ? 'db-btn-primary' : 'db-btn-secondary'}`}
+              title="Toggle Detailed Metrics Cards (Storage, Latency, Indexes)"
+            >
+              <BarChart3 className="w-3 h-3" />
+              <span className="hidden md:inline">Stats</span>
+            </button>
+          )}
+
+          {/* Inline Summary Badges when stats are collapsed */}
+          {!showDetailedStats && selectedCollection && (
+            <div className="hidden lg:flex items-center gap-1.5 text-xs font-mono text-[var(--text-muted)]">
+              <span className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--accent-emerald)] font-bold">
+                {totalCount.toLocaleString()} docs
+              </span>
+              <span className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)]">
+                {formatSize(currentCollStats?.size || 0)}
+              </span>
+            </div>
+          )}
+
+          {/* Quick In-Page Search */}
+          <div className="relative flex items-center">
+            <Search className="w-3.5 h-3.5 absolute right-2 text-slate-500 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search current documents..."
+              placeholder="Search in page..."
               value={clientSearch}
               onChange={(e) => setClientSearch(e.target.value)}
-              className="db-input pl-8 py-1 text-xs w-44 sm:w-56"
+              className="db-input pl-7 pr-6 py-1 text-xs w-28 sm:w-40"
             />
+            {clientSearch && (
+              <button
+                onClick={() => setClientSearch('')}
+                className="absolute right-1.5 text-slate-400 hover:text-white"
+                title="Clear search"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
 
           <button
             onClick={onRefresh}
-            className="db-icon-btn"
+            className="db-icon-btn p-1.5"
             title="Reload Documents"
           >
-            <RefreshCw className={`db-icon-xs ${loading ? 'animate-spin db-icon-emerald' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin db-icon-emerald' : ''}`} />
           </button>
         </div>
 
         {/* Right Actions */}
-        <div className="db-row-end">
+        <div className="db-row-end gap-1.5 flex-wrap">
           {selectedDocIds.size > 0 && (
-            <span className="db-badge db-badge-cyan">
+            <span className="db-badge db-badge-cyan text-xs">
               {selectedDocIds.size} selected
             </span>
           )}
 
-          <button onClick={handleExportJSON} className="db-btn db-btn-secondary">
-            <Code2 className="db-icon-xs db-icon-purple" /> Export JSON
+          <button onClick={handleExportJSON} className="db-btn db-btn-secondary db-text-xs py-1 px-2" title="Export as JSON">
+            <Code2 className="db-icon-xs db-icon-purple" />
+            <span className="hidden md:inline">Export JSON</span>
           </button>
 
-          <button onClick={handleExportCSV} className="db-btn db-btn-secondary">
-            <FileSpreadsheet className="db-icon-xs db-icon-emerald" /> Export CSV
+          <button onClick={handleExportCSV} className="db-btn db-btn-secondary db-text-xs py-1 px-2" title="Export as CSV">
+            <FileSpreadsheet className="db-icon-xs db-icon-emerald" />
+            <span className="hidden md:inline">Export CSV</span>
           </button>
 
           <button
             onClick={onOpenCreateModal}
             disabled={readOnlyMode}
-            className={`db-btn ${readOnlyMode ? 'db-btn-secondary opacity-50' : 'db-btn-primary'}`}
+            className={`db-btn db-text-xs py-1 px-2.5 ${readOnlyMode ? 'db-btn-secondary opacity-50' : 'db-btn-primary'}`}
+            title="Insert new document"
           >
             <Plus className="db-icon-xs" />
-            <span>New Document</span>
+            <span className="font-semibold">New Document</span>
           </button>
         </div>
       </div>
 
       {/* Main View Container */}
-      <div className="db-flex-1 db-overflow-auto db-p-3">
+      <div className="flex-1 flex flex-col min-h-0 overflow-auto p-2">
         {loading ? (
           <div className="db-full-h db-flex db-items-center db-justify-center db-text-xs db-text-muted">
             <RefreshCw className="db-icon-sm animate-spin db-icon-emerald" />
@@ -288,19 +329,19 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
           </div>
         ) : viewMode === 'table' ? (
           /* Custom Table View */
-          <div className="db-table-wrapper">
+          <div className="db-table-wrapper h-full overflow-auto">
             <table className="db-table">
               <thead>
                 <tr>
-                  <th className="db-text-center">
+                  <th className="db-text-center w-10">
                     <button onClick={handleToggleSelectAll} className="db-btn-ghost">
                       {selectedDocIds.size === filteredDocuments.length ? <CheckSquare className="db-icon-xs db-icon-emerald" /> : <Square className="db-icon-xs" />}
                     </button>
                   </th>
-                  <th className="db-text-center">Actions</th>
+                  <th className="db-text-center w-24">Actions</th>
                   {columns.map(col => (
                     <th key={col}>
-                      <div className="db-row-start">
+                      <div className="db-row-start gap-1">
                         {getColumnTypeIcon(col)}
                         <span>{col}</span>
                       </div>
@@ -314,21 +355,26 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                   const isSelected = selectedDocIds.has(idStr);
 
                   return (
-                    <tr key={idx} className={isSelected ? 'active-emerald' : ''}>
+                    <tr
+                      key={idx}
+                      className={isSelected ? 'active-emerald' : ''}
+                      onDoubleClick={() => !readOnlyMode && onOpenEditModal(doc)}
+                      title="Double-click to edit document"
+                    >
                       <td className="db-text-center">
                         <button onClick={() => handleToggleSelectRow(idStr)} className="db-btn-ghost">
                           {isSelected ? <CheckSquare className="db-icon-xs db-icon-emerald" /> : <Square className="db-icon-xs" />}
                         </button>
                       </td>
                       <td className="text-center">
-                        <div className="db-row-start justify-center">
-                          <button onClick={() => setSelectedCellDoc(doc)} className="db-icon-btn-cyan" title="Inspect">
+                        <div className="db-row-start justify-center gap-1">
+                          <button onClick={() => setSelectedCellDoc(doc)} className="db-icon-btn-cyan p-1" title="Inspect Document">
                             <Eye className="db-icon-xs" />
                           </button>
-                          <button onClick={() => onOpenEditModal(doc)} disabled={readOnlyMode} className="db-icon-btn-emerald">
+                          <button onClick={() => onOpenEditModal(doc)} disabled={readOnlyMode} className="db-icon-btn-emerald p-1" title="Edit Document">
                             <Edit2 className="db-icon-xs" />
                           </button>
-                          <button onClick={() => onDeleteDoc(doc)} disabled={readOnlyMode} className="db-icon-btn-danger">
+                          <button onClick={() => onDeleteDoc(doc)} disabled={readOnlyMode} className="db-icon-btn-danger p-1" title="Delete Document">
                             <Trash2 className="db-icon-xs" />
                           </button>
                         </div>
@@ -352,13 +398,13 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                     Doc #{idx + 1 + (page - 1) * limit}
                   </span>
                   <div className="db-row-end">
-                    <button onClick={() => handleCopyDoc(doc, idx)} className="db-icon-btn">
+                    <button onClick={() => handleCopyDoc(doc, idx)} className="db-icon-btn" title="Copy Document JSON">
                       {copiedIndex === idx ? <Check className="db-icon-xs db-icon-emerald" /> : <Copy className="db-icon-xs" />}
                     </button>
-                    <button onClick={() => onOpenEditModal(doc)} disabled={readOnlyMode} className="db-icon-btn-emerald">
+                    <button onClick={() => onOpenEditModal(doc)} disabled={readOnlyMode} className="db-icon-btn-emerald" title="Edit Document">
                       <Edit2 className="db-icon-xs" />
                     </button>
-                    <button onClick={() => onDeleteDoc(doc)} disabled={readOnlyMode} className="db-icon-btn-danger">
+                    <button onClick={() => onDeleteDoc(doc)} disabled={readOnlyMode} className="db-icon-btn-danger" title="Delete Document">
                       <Trash2 className="db-icon-xs" />
                     </button>
                   </div>
@@ -390,10 +436,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                 <div className="db-row-start db-justify-between db-border-b db-py-1">
                   <span className="db-font-mono db-text-xs db-text-primary db-font-bold">Doc #{idx + 1 + (page - 1) * limit}</span>
                   <div className="db-row-end">
-                    <button onClick={() => onOpenEditModal(doc)} disabled={readOnlyMode} className="db-icon-btn-emerald">
+                    <button onClick={() => onOpenEditModal(doc)} disabled={readOnlyMode} className="db-icon-btn-emerald" title="Edit Document">
                       <Edit2 className="db-icon-xs" />
                     </button>
-                    <button onClick={() => onDeleteDoc(doc)} disabled={readOnlyMode} className="db-icon-btn-danger">
+                    <button onClick={() => onDeleteDoc(doc)} disabled={readOnlyMode} className="db-icon-btn-danger" title="Delete Document">
                       <Trash2 className="db-icon-xs" />
                     </button>
                   </div>
@@ -408,7 +454,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             <Editor
               height="100%"
               defaultLanguage="json"
-              theme="vs-dark"
+              theme={theme === 'theme-light' ? 'light' : 'vs-dark'}
               value={JSON.stringify(filteredDocuments, null, 2)}
               options={{
                 readOnly: true,
@@ -429,7 +475,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
       </div>
 
       {/* Pagination Footer */}
-      <div className="db-footer-pagination">
+      <div className="db-footer-pagination py-1.5 px-3">
         <div>
           Showing {filteredDocuments.length > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, totalCount)} of <strong>{totalCount}</strong> docs
         </div>
@@ -450,11 +496,11 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
           </div>
 
           <div className="db-row-start">
-            <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="db-btn db-btn-secondary db-p-1">
+            <button onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="db-btn db-btn-secondary db-p-1" title="Previous Page">
               <ChevronLeft className="db-icon-sm" />
             </button>
             <span className="db-px-2">Page {page} of {totalPages}</span>
-            <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="db-btn db-btn-secondary db-p-1">
+            <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages} className="db-btn db-btn-secondary db-p-1" title="Next Page">
               <ChevronRight className="db-icon-sm" />
             </button>
           </div>
@@ -466,14 +512,32 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         <div className="db-modal-overlay">
           <div className="db-modal-box db-modal-lg db-modal-editor-box">
             <div className="db-modal-header">
-              <span className="db-font-bold db-text-xs db-text-primary">Inspect Document JSON</span>
-              <button onClick={() => setSelectedCellDoc(null)} className="db-btn db-btn-secondary db-p-1">✕</button>
+              <div className="db-row-start">
+                <Code2 className="db-icon-sm db-icon-cyan" />
+                <span className="db-font-bold db-text-xs db-text-primary">Inspect Document JSON</span>
+              </div>
+              <div className="db-row-end">
+                <button
+                  onClick={() => {
+                    const docToEdit = selectedCellDoc;
+                    setSelectedCellDoc(null);
+                    onOpenEditModal(docToEdit);
+                  }}
+                  disabled={readOnlyMode}
+                  className="db-btn db-btn-primary db-text-xs"
+                  title="Edit Document"
+                >
+                  <Edit2 className="db-icon-xs" />
+                  <span>Edit Document</span>
+                </button>
+                <button onClick={() => setSelectedCellDoc(null)} className="db-btn db-btn-secondary db-p-1" title="Close">✕</button>
+              </div>
             </div>
-            <div className="db-flex-1 db-p-2">
+            <div className="flex-1 min-h-[380px] relative p-2 border-y border-[var(--border-color)] bg-[var(--bg-card)]">
               <Editor
                 height="100%"
                 defaultLanguage="json"
-                theme="vs-dark"
+                theme={theme === 'theme-light' ? 'light' : 'vs-dark'}
                 value={JSON.stringify(selectedCellDoc, null, 2)}
                 options={{
                   readOnly: true,

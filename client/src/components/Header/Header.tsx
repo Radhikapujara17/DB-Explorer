@@ -54,31 +54,31 @@ export const Header: React.FC<HeaderProps> = ({
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="db-p-1-5 db-rounded-lg db-bg-slate-900 db-border db-border-slate-800 db-text-slate-400 hover:text-slate-100 db-transition db-hidden-md"
+            className="db-p-1-5 db-rounded-lg bg-[var(--bg-card)] db-border border-[var(--border-color)] db-text-slate-400 hover:text-[var(--text-primary)] db-transition lg:hidden"
             title="Toggle Sidebar"
           >
             <Menu className="w-4 h-4" />
           </button>
         )}
 
-        <div className="db-flex db-items-center db-gap-2-5">
+        <div className="db-flex db-items-center gap-2">
           <div className="db-header-logo">
-            <Database className="w-4.5 h-4.5 text-slate-950 font-bold" />
+            <Database className="w-4 h-4 text-slate-950 font-bold" />
           </div>
           <div>
-            <h1 className="db-header-title db-flex db-items-center db-gap-1-5">
-              DB Explorer 
+            <h1 className="db-header-title db-flex db-items-center gap-1">
+              DB Explorer
               <span className="db-header-badge">v1.0 Pro</span>
             </h1>
           </div>
         </div>
 
-        <div className="db-hidden-sm w-1 h-4 db-bg-slate-800 mx-1" />
+        <div className="db-hidden-sm w-1 h-4 bg-[var(--border-color)] mx-1" />
 
         {/* Profile / Connection Button */}
         <button
           onClick={onOpenConnectionModal}
-          className="db-flex db-items-center db-gap-2 db-px-2-5 db-py-1-5 db-rounded-lg db-bg-slate-900-90 hover:db-bg-slate-900 db-border db-border-slate-800 db-text-xs db-text-secondary db-transition"
+          className="db-flex db-items-center gap-2 db-px-2-5 db-py-1-5 db-rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] db-border border-[var(--border-color)] db-text-xs db-text-secondary db-transition"
         >
           <span
             className="w-2 h-2 db-rounded-full db-flex-shrink-0"
@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Middle: Active DB & Collection breadcrumb */}
-      <div className="db-hidden-md db-flex db-items-center db-gap-2 db-text-xs font-mono db-bg-slate-900-80 db-px-3 db-py-1 db-rounded-lg db-border db-border-slate-800-80">
+      <div className="hidden md:flex db-items-center gap-2 db-text-xs font-mono bg-[var(--bg-card)] db-px-3 db-py-1 db-rounded-lg db-border border-[var(--border-color)]">
         <span className="db-text-muted">Database:</span>
         <span className="db-text-emerald db-font-bold">{selectedDb || 'None'}</span>
         <span className="db-text-muted">/</span>
@@ -114,15 +114,14 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right Actions: Read Only Safety Guard & AI Assistant & API Key */}
-      <div className="db-flex db-items-center db-gap-2 sm:db-gap-3">
+      <div className="db-flex db-items-center gap-2 sm:db-gap-3">
         {/* Read Only Toggle */}
         <button
           onClick={toggleReadOnly}
-          className={`db-flex db-items-center db-gap-1-5 db-px-2-5 db-py-1 db-rounded-lg db-text-xs db-font-semibold db-border db-transition ${
-            readOnlyMode
-              ? 'db-bg-amber-15 db-text-amber db-border-amber-30'
-              : 'db-bg-emerald-15 db-text-emerald db-border-emerald-30'
-          }`}
+          className={`db-flex db-items-center gap-1 db-px-2-5 db-py-1 db-rounded-lg db-text-xs db-font-semibold db-border db-transition ${readOnlyMode
+            ? 'db-bg-amber-15 db-text-amber db-border-amber-30'
+            : 'db-bg-emerald-15 db-text-emerald db-border-emerald-30'
+            }`}
           title={readOnlyMode ? 'Read-Only Safety Guard ACTIVE (Writes Blocked)' : 'Read-Write Mode Active'}
         >
           {readOnlyMode ? <ShieldAlert className="w-3.5 h-3.5 db-text-amber" /> : <Shield className="w-3.5 h-3.5 db-text-emerald" />}
@@ -133,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
         {selectedCollection && (
           <button
             onClick={onOpenSchemaModal}
-            className="db-hidden-sm db-flex db-items-center db-gap-1-5 db-px-2-5 db-py-1 db-rounded-lg db-text-xs db-font-semibold db-bg-slate-900 hover:db-bg-slate-900-80 db-text-secondary db-border db-border-slate-800 db-transition"
+            className="db-hidden-sm db-flex db-items-center gap-1 db-px-2-5 db-py-1 db-rounded-lg db-text-xs db-font-semibold bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] db-text-secondary db-border border-[var(--border-color)] db-transition"
           >
             <Layers className="w-3.5 h-3.5 db-icon-cyan" />
             <span>Schema & Indexes</span>
@@ -144,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="db-relative">
           <button
             onClick={() => { setShowThemePicker(!showThemePicker); setShowKeyInput(false); }}
-            className="db-flex db-items-center db-gap-1-5 db-px-2-5 db-py-1-5 db-rounded-lg db-bg-slate-900 hover:db-bg-slate-900-80 db-border db-border-slate-800 db-text-xs db-text-secondary db-transition"
+            className="db-flex db-items-center gap-1 db-px-2-5 db-py-1-5 db-rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] db-border border-[var(--border-color)] db-text-xs db-text-secondary db-transition"
             title="Switch Workspace Theme"
           >
             <Palette className="w-4 h-4 db-icon-emerald" />
@@ -152,83 +151,87 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {showThemePicker && (
-            <div className="absolute right-0 top-11 w-64 db-p-3 db-bg-slate-900 db-border db-border-slate-800 db-rounded-xl db-shadow-2xl db-z-50 animate-slide-down">
-              <div className="db-flex db-items-center db-justify-between mb-2 border-b db-border-slate-800 pb-2">
-                <h4 className="db-text-xs db-font-semibold db-text-primary db-flex db-items-center db-gap-1-5">
-                  <Palette className="w-4 h-4 db-icon-emerald" /> Select Theme
-                </h4>
-                <span className="db-text-xs db-text-muted">5 Themes</span>
-              </div>
-              <div className="db-space-y-1">
-                {THEME_OPTIONS.map(opt => (
-                  <button
-                    key={opt.id}
-                    onClick={() => {
-                      setTheme(opt.id);
-                      setShowThemePicker(false);
-                    }}
-                    className={`w-full db-flex db-items-center db-justify-between db-p-2 db-rounded-lg db-text-xs db-transition ${
-                      theme === opt.id
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowThemePicker(false)} />
+              <div className="absolute right-0 top-11 w-64 db-p-3 bg-[var(--bg-panel)] border border-[var(--border-color)] db-rounded-xl db-shadow-2xl z-50 animate-slide-down" style={{ zIndex: 100 }}>
+                <div className="db-flex db-items-center db-justify-between mb-2 border-b border-[var(--border-color)] pb-2">
+                  <h4 className="db-text-xs db-font-semibold db-text-primary db-flex db-items-center gap-1">
+                    <Palette className="w-4 h-4 db-icon-emerald" /> Select Theme
+                  </h4>
+                  <span className="db-text-xs db-text-muted">5 Themes</span>
+                </div>
+                <div className="db-space-y-1">
+                  {THEME_OPTIONS.map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        setTheme(opt.id);
+                        setShowThemePicker(false);
+                      }}
+                      className={`w-full db-flex db-items-center db-justify-between db-p-2 db-rounded-lg db-text-xs db-transition ${theme === opt.id
                         ? 'db-bg-emerald-15 db-text-emerald db-font-bold db-border db-border-emerald-30'
-                        : 'hover:db-bg-slate-800 db-text-secondary'
-                    }`}
-                  >
-                    <div className="db-flex db-items-center db-gap-2">
-                      <span className="w-2.5 h-2.5 db-rounded-full" style={{ backgroundColor: opt.color }} />
-                      <span className="db-text-left">{opt.name}</span>
-                    </div>
-                    {theme === opt.id && <Check className="w-3.5 h-3.5 db-text-emerald" />}
-                  </button>
-                ))}
+                        : 'hover:bg-[var(--bg-hover)] db-text-secondary'
+                        }`}
+                    >
+                      <div className="db-flex db-items-center gap-2">
+                        <span className="w-2.5 h-2.5 db-rounded-full" style={{ backgroundColor: opt.color }} />
+                        <span className="db-text-left">{opt.name}</span>
+                      </div>
+                      {theme === opt.id && <Check className="w-3.5 h-3.5 db-text-emerald" />}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
         {/* Gemini API Key indicator / input */}
         <div className="db-relative">
           <button
-            onClick={() => setShowKeyInput(!showKeyInput)}
-            className={`db-p-1-5 db-rounded-lg db-border db-text-xs db-transition ${
-              geminiApiKey
-                ? 'db-bg-purple-15 db-border-purple-30 db-text-purple'
-                : 'db-bg-slate-900 db-border-slate-800 db-text-slate-400 hover:db-text-slate-200'
-            }`}
+            onClick={() => { setShowKeyInput(!showKeyInput); setShowThemePicker(false); }}
+            className={`db-p-1-5 db-rounded-lg db-border db-text-xs db-transition ${geminiApiKey
+              ? 'db-bg-purple-15 db-border-purple-30 db-text-purple'
+              : 'bg-[var(--bg-card)] border-[var(--border-color)] db-text-slate-400 hover:text-[var(--text-primary)]'
+              }`}
             title="Configure Gemini API Key"
           >
             <Key className="w-4 h-4" />
           </button>
 
           {showKeyInput && (
-            <div className="absolute right-0 top-11 w-72 db-p-3-5 db-bg-slate-900 db-border db-border-slate-800 db-rounded-xl db-shadow-2xl db-z-50 animate-slide-down">
-              <h4 className="db-text-xs db-font-semibold db-text-primary mb-1 db-flex db-items-center db-gap-1-5">
-                <Key className="w-4 h-4 db-icon-purple" /> Gemini API Key
-              </h4>
-              <p className="db-text-xs db-text-muted mb-2-5">
-                Enter custom Google Gemini API Key or leave empty to use server default.
-              </p>
-              <input
-                type="password"
-                value={keyInput}
-                onChange={(e) => setKeyInput(e.target.value)}
-                placeholder="AIzaSy..."
-                className="input-field mb-3 db-text-xs"
-              />
-              <div className="db-flex db-justify-end db-gap-2">
-                <button
-                  onClick={() => setShowKeyInput(false)}
-                  className="db-px-2-5 db-py-1 db-text-xs db-text-muted hover:db-text-primary"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveKey}
-                  className="btn btn-primary db-text-xs db-py-1 db-px-3"
-                >
-                  Save Key
-                </button>
+            <>
+              <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowKeyInput(false)} />
+              <div className="absolute right-0 top-11 w-72 db-p-3-5 bg-[var(--bg-panel)] border border-[var(--border-color)] db-rounded-xl db-shadow-2xl z-50 animate-slide-down" style={{ zIndex: 100 }}>
+                <h4 className="db-text-xs db-font-semibold db-text-primary mb-1 db-flex db-items-center gap-1">
+                  <Key className="w-4 h-4 db-icon-purple" /> Gemini API Key
+                </h4>
+                <p className="db-text-xs db-text-muted mb-2-5">
+                  Enter custom Google Gemini API Key or leave empty to use server default.
+                </p>
+                <input
+                  type="password"
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="input-field mb-3 db-text-xs"
+                />
+                <div className="db-flex db-justify-end gap-2">
+                  <button
+                    onClick={() => setShowKeyInput(false)}
+                    className="db-px-2-5 db-py-1 db-text-xs db-text-muted hover:db-text-primary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveKey}
+                    className="btn btn-primary db-text-xs db-py-1 db-px-3"
+                  >
+                    Save Key
+                  </button>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 

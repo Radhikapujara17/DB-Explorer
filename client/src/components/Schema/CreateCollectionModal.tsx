@@ -72,7 +72,7 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
               placeholder="Collection name (e.g. audit_logs)"
               value={collectionName}
               onChange={(e) => setCollectionName(e.target.value)}
-              className="db-input db-input-mono db-full-w db-text-xs"
+              className="input-field input-mono text-xs mt-2"
             />
           </div>
 

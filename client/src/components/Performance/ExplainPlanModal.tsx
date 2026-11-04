@@ -15,7 +15,7 @@ export const ExplainPlanModal: React.FC<ExplainPlanModalProps> = ({
   onClose,
   queryFilter
 }) => {
-  const { activeProfile, selectedDb, selectedCollection } = useConnection();
+  const { activeProfile, selectedDb, selectedCollection, theme } = useConnection();
   const [explainPlan, setExplainPlan] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,13 +136,23 @@ export const ExplainPlanModal: React.FC<ExplainPlanModalProps> = ({
               )}
 
               {/* Raw JSON explain output */}
-              <div className="db-card-box db-overflow-hidden">
+              <div className="h-72 border border-[var(--border-color)] rounded-lg overflow-hidden bg-[var(--bg-card)]">
                 <Editor
                   height="100%"
                   defaultLanguage="json"
-                  theme="vs-dark"
+                  theme={theme === 'theme-light' ? 'light' : 'vs-dark'}
                   value={JSON.stringify(explainPlan, null, 2)}
-                  options={{ readOnly: true, minimap: { enabled: false }, fontSize: 12, fontFamily: 'Fira Code' }}
+                  options={{
+                    readOnly: true,
+                    minimap: { enabled: false },
+                    fontSize: 12,
+                    fontFamily: 'Fira Code, monospace',
+                    lineNumbers: 'on',
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    tabSize: 2,
+                    padding: { top: 8, bottom: 8 }
+                  }}
                 />
               </div>
             </>

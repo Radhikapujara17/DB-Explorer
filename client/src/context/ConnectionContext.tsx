@@ -75,11 +75,34 @@ const DEFAULT_PROFILES: SavedProfile[] = [
   }
 ];
 
+const getStorageItem = (key: string): string | null => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const setStorageItem = (key: string, value: string): void => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+};
+
+const removeStorageItem = (key: string): void => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+};
+
 const ConnectionContext = createContext<ConnectionContextType | undefined>(undefined);
 
 export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [savedProfiles, setSavedProfiles] = useState<SavedProfile[]>(() => {
-    const saved = localStorage.getItem('db_explorer_profiles');
+    const saved = getStorageItem('db_explorer_profiles');
     if (saved) {
       try { return JSON.parse(saved); } catch {}
     }
@@ -87,30 +110,34 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const [geminiApiKey, setGeminiApiKeyState] = useState<string>(() => {
-    return localStorage.getItem('db_explorer_gemini_key') || '';
+    return getStorageItem('db_explorer_gemini_key') || '';
   });
 
   const setGeminiApiKey = (key: string) => {
     setGeminiApiKeyState(key);
-    localStorage.setItem('db_explorer_gemini_key', key);
+    setStorageItem('db_explorer_gemini_key', key);
   };
 
   const [theme, setThemeState] = useState<string>(() => {
-    return localStorage.getItem('db_explorer_theme') || 'theme-mongo';
+    return getStorageItem('db_explorer_theme') || 'theme-mongo';
   });
 
   const setTheme = (newTheme: string) => {
     setThemeState(newTheme);
-    localStorage.setItem('db_explorer_theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
+    setStorageItem('db_explorer_theme', newTheme);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', newTheme);
+    }
   };
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
   }, [theme]);
 
   const [activeProfile, setActiveProfile] = useState<SavedProfile | null>(() => {
-    const active = localStorage.getItem('db_explorer_active_profile');
+    const active = getStorageItem('db_explorer_active_profile');
     if (active) {
       try { return JSON.parse(active); } catch {}
     }
@@ -129,33 +156,61 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Tabs
   const [tabs, setTabs] = useState<CollectionTab[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [activeTabId, setActiveTabIdState] = useState<string | null>(null);
 
   // History & Saved Snippets
   const [queryHistory, setQueryHistory] = useState<any[]>(() => {
-    const saved = localStorage.getItem('db_explorer_history');
+    const saved = getStorageItem('db_explorer_history');
     return saved ? JSON.parse(saved) : [];
   });
   const [savedQueries, setSavedQueries] = useState<SavedQuerySnippet[]>(() => {
-    const saved = localStorage.getItem('db_explorer_saved_queries');
+    const saved = getStorageItem('db_explorer_saved_queries');
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Client-side hydration sync for localStorage
   useEffect(() => {
-    localStorage.setItem('db_explorer_profiles', JSON.stringify(savedProfiles));
+    const savedProfs = getStorageItem('db_explorer_profiles');
+    if (savedProfs) {
+      try { setSavedProfiles(JSON.parse(savedProfs)); } catch {}
+    }
+    const savedKey = getStorageItem('db_explorer_gemini_key');
+    if (savedKey) setGeminiApiKeyState(savedKey);
+
+    const savedTheme = getStorageItem('db_explorer_theme');
+    if (savedTheme) {
+      setThemeState(savedTheme);
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      }
+    }
+
+    const savedHist = getStorageItem('db_explorer_history');
+    if (savedHist) {
+      try { setQueryHistory(JSON.parse(savedHist)); } catch {}
+    }
+
+    const savedSnippets = getStorageItem('db_explorer_saved_queries');
+    if (savedSnippets) {
+      try { setSavedQueries(JSON.parse(savedSnippets)); } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    setStorageItem('db_explorer_profiles', JSON.stringify(savedProfiles));
   }, [savedProfiles]);
 
   useEffect(() => {
-    localStorage.setItem('db_explorer_history', JSON.stringify(queryHistory.slice(-20)));
+    setStorageItem('db_explorer_history', JSON.stringify(queryHistory.slice(-20)));
   }, [queryHistory]);
 
   useEffect(() => {
-    localStorage.setItem('db_explorer_saved_queries', JSON.stringify(savedQueries));
+    setStorageItem('db_explorer_saved_queries', JSON.stringify(savedQueries));
   }, [savedQueries]);
 
   useEffect(() => {
     if (activeProfile) {
-      localStorage.setItem('db_explorer_active_profile', JSON.stringify(activeProfile));
+      setStorageItem('db_explorer_active_profile', JSON.stringify(activeProfile));
       setReadOnlyMode(activeProfile.isReadOnly);
       connectProfile(activeProfile);
     }
@@ -220,7 +275,7 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const loadCollections = async (uri: string, dbName: string) => {
+  const loadCollections = async (uri: string, dbName: string, targetCollection?: string) => {
     setLoadingCollections(true);
     try {
       const res = await axios.get(`/api/collections/${dbName}`, {
@@ -228,8 +283,9 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       });
       if (res.data.success) {
         setCollections(res.data.collections);
-        if (res.data.collections.length > 0) {
-          openTab(dbName, res.data.collections[0].name);
+        const collToOpen = targetCollection || (res.data.collections.length > 0 ? res.data.collections[0].name : null);
+        if (collToOpen) {
+          openTab(dbName, collToOpen);
         } else {
           setSelectedCollection(null);
         }
@@ -259,25 +315,39 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const tabId = `${dbName}:${collectionName}`;
     setSelectedDb(dbName);
     setSelectedCollection(collectionName);
+    setActiveTabIdState(tabId);
 
     setTabs(prev => {
       if (prev.some(t => t.id === tabId)) return prev;
       return [...prev, { id: tabId, dbName, collectionName }];
     });
-    setActiveTabId(tabId);
+  };
+
+  const setActiveTabId = async (tabId: string) => {
+    setActiveTabIdState(tabId);
+    const target = tabs.find(t => t.id === tabId);
+    if (!target) return;
+
+    if (target.dbName !== selectedDb && activeProfile) {
+      setSelectedDb(target.dbName);
+      await loadCollections(activeProfile.uri, target.dbName, target.collectionName);
+    } else {
+      setSelectedDb(target.dbName);
+      setSelectedCollection(target.collectionName);
+    }
   };
 
   const closeTab = (tabId: string) => {
     setTabs(prev => {
       const newTabs = prev.filter(t => t.id !== tabId);
       if (activeTabId === tabId && newTabs.length > 0) {
-        const last = newTabs[newTabs.length - 1];
+        const last = newTabs[newTabs.length - 1]!;
         setSelectedDb(last.dbName);
         setSelectedCollection(last.collectionName);
-        setActiveTabId(last.id);
+        setActiveTabIdState(last.id);
       } else if (newTabs.length === 0) {
         setSelectedCollection(null);
-        setActiveTabId(null);
+        setActiveTabIdState(null);
       }
       return newTabs;
     });
@@ -295,7 +365,7 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       id: Date.now().toString(),
       name,
       query,
-      collectionName,
+      ...(collectionName ? { collectionName } : {}),
       createdAt: new Date().toLocaleDateString()
     };
     setSavedQueries(prev => [...prev, snippet]);
@@ -313,7 +383,7 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSelectedDb(null);
     setSelectedCollection(null);
     setTabs([]);
-    localStorage.removeItem('db_explorer_active_profile');
+    removeStorageItem('db_explorer_active_profile');
   };
 
   const toggleReadOnly = () => {
