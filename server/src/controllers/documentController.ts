@@ -3,6 +3,18 @@ import { MongoConnectionManager } from '../services/mongoManager.js';
 
 const mongoManager = MongoConnectionManager.getInstance();
 
+export const checkReadOnlyGuard = (req: Request, res: Response): boolean => {
+  const isReadOnly = req.headers['x-readonly'] === 'true';
+  if (isReadOnly) {
+    res.status(403).json({
+      success: false,
+      error: 'Security Guard: Server-side Read-Only mode is enabled. Mutation operations are prohibited.'
+    });
+    return true;
+  }
+  return false;
+};
+
 export const queryDocuments = async (req: Request, res: Response): Promise<void> => {
   try {
     const connectionUri = (req.headers['x-mongo-uri'] as string) || req.body.connectionUri;
@@ -30,6 +42,8 @@ export const queryDocuments = async (req: Request, res: Response): Promise<void>
 
 export const insertDocument = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (checkReadOnlyGuard(req, res)) return;
+
     const connectionUri = (req.headers['x-mongo-uri'] as string) || req.body.connectionUri;
     const { dbName, collectionName } = req.params;
     const { document } = req.body;
@@ -48,6 +62,8 @@ export const insertDocument = async (req: Request, res: Response): Promise<void>
 
 export const updateDocument = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (checkReadOnlyGuard(req, res)) return;
+
     const connectionUri = (req.headers['x-mongo-uri'] as string) || req.body.connectionUri;
     const { dbName, collectionName } = req.params;
     const { filter, update } = req.body;
@@ -70,16 +86,18 @@ export const updateDocument = async (req: Request, res: Response): Promise<void>
 
 export const deleteDocument = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (checkReadOnlyGuard(req, res)) return;
+
     const connectionUri = (req.headers['x-mongo-uri'] as string) || req.body.connectionUri;
     const { dbName, collectionName } = req.params;
-    const { filter } = req.body;
+    const { filter, isMany } = req.body;
 
     if (!connectionUri || !dbName || !collectionName || !filter) {
       res.status(400).json({ success: false, error: 'connectionUri, dbName, collectionName, and filter are required' });
       return;
     }
 
-    const result = await mongoManager.deleteDocument(connectionUri, dbName, collectionName, filter);
+    const result = await mongoManager.deleteDocument(connectionUri, dbName, collectionName, filter, !!isMany);
     res.json({ success: true, ...result });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });

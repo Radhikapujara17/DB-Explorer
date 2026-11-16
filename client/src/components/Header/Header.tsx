@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database, Shield, ShieldAlert, Sparkles, Key, Wifi, RefreshCw, Menu, Layers, Palette, Check } from 'lucide-react';
 import { useConnection } from '../../context/ConnectionContext';
 
@@ -41,6 +41,18 @@ export const Header: React.FC<HeaderProps> = ({
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [keyInput, setKeyInput] = useState(geminiApiKey);
+
+  useEffect(() => {
+    if (!showThemePicker && !showKeyInput) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowThemePicker(false);
+        setShowKeyInput(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showThemePicker, showKeyInput]);
 
   const handleSaveKey = () => {
     setGeminiApiKey(keyInput);

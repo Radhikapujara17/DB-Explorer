@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppContent } from "../App";
-import { ConnectionProvider } from "../context/ConnectionContext";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,9 +24,5 @@ export const Route = createFileRoute("/")({
 });
 
 function StudioApp() {
-  return (
-    <ConnectionProvider>
-      <AppContent />
-    </ConnectionProvider>
-  );
+  return <AppContent initialMode="explorer" />;
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Layers, Key, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { ConfirmDestructionModal } from '../Common/ConfirmDestructionModal';
 import { useConnection } from '../../context/ConnectionContext';
 import axios from 'axios';
 
@@ -57,6 +58,7 @@ export const SchemaInspectorModal: React.FC<SchemaInspectorModalProps> = ({
   const [newIndexOrder, setNewIndexOrder] = useState<'1' | '-1'>('1');
   const [newIndexUnique, setNewIndexUnique] = useState(false);
   const [creatingIndex, setCreatingIndex] = useState(false);
+  const [indexToDrop, setIndexToDrop] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -121,7 +123,12 @@ export const SchemaInspectorModal: React.FC<SchemaInspectorModalProps> = ({
       const res = await axios.post(
         `/api/indexes/${dbName}/${collectionName}/create`,
         { fieldSpecs, isUnique: newIndexUnique },
-        { headers: { 'x-mongo-uri': activeProfile.uri } }
+        {
+          headers: {
+            'x-mongo-uri': activeProfile.uri,
+            'x-readonly': readOnlyMode ? 'true' : 'false'
+          }
+        }
       );
       if (res.data.success) {
         setMessage({ type: 'success', text: `Index "${res.data.indexName}" created successfully!` });
@@ -136,30 +143,50 @@ export const SchemaInspectorModal: React.FC<SchemaInspectorModalProps> = ({
     }
   };
 
-  const handleDropIndex = async (indexName: string) => {
+  const handleDropIndex = (indexName: string) => {
     if (readOnlyMode) {
-      alert('Read-only mode is active. Cannot drop indexes.');
+      setMessage({ type: 'error', text: 'Read-only mode is active. Cannot drop indexes.' });
       return;
     }
     if (indexName === '_id_') {
-      alert('Cannot drop the default _id_ index in MongoDB.');
+      setMessage({ type: 'error', text: 'Cannot drop the default _id_ index in MongoDB.' });
       return;
     }
-    if (!confirm(`Are you sure you want to drop index "${indexName}"?`)) return;
+    setIndexToDrop(indexName);
+  };
+
+  const handleConfirmDropIndex = async () => {
+    if (!indexToDrop || !dbName || !collectionName || !activeProfile) return;
+    const target = indexToDrop;
+    setIndexToDrop(null);
 
     try {
       const res = await axios.delete(
-        `/api/indexes/${dbName}/${collectionName}/${indexName}`,
-        { headers: { 'x-mongo-uri': activeProfile?.uri } }
+        `/api/indexes/${dbName}/${collectionName}/${target}`,
+        {
+          headers: {
+            'x-mongo-uri': activeProfile.uri,
+            'x-readonly': readOnlyMode ? 'true' : 'false'
+          }
+        }
       );
       if (res.data.success) {
-        setMessage({ type: 'success', text: `Index "${indexName}" dropped successfully.` });
+        setMessage({ type: 'success', text: `Index "${target}" dropped successfully.` });
         fetchIndexes();
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.response?.data?.error || err.message });
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -431,6 +458,16 @@ export const SchemaInspectorModal: React.FC<SchemaInspectorModalProps> = ({
           </button>
         </div>
       </div>
+
+      <ConfirmDestructionModal
+        isOpen={!!indexToDrop}
+        title={`Drop Index "${indexToDrop}"`}
+        message={`Are you sure you want to drop index "${indexToDrop}" from collection "${collectionName}"? Query performance relying on this key may degrade.`}
+        confirmTargetName={indexToDrop || ''}
+        confirmButtonText="Drop Index"
+        onConfirm={handleConfirmDropIndex}
+        onClose={() => setIndexToDrop(null)}
+      />
     </div>
   );
 };

@@ -2,6 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          var s = localStorage.getItem('db_explorer_theme') || 'theme-mongo';
+          document.documentElement.setAttribute('data-theme', s);
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>Database Explorer | High Performance MongoDB Studio & AI Assistant</title>

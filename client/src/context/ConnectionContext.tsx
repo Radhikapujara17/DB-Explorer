@@ -37,7 +37,7 @@ interface ConnectionContextType {
   loadingCollections: boolean;
   geminiApiKey: string;
   setGeminiApiKey: (key: string) => void;
-  saveProfile: (name: string, uri: string, isReadOnly: boolean) => void;
+  saveProfile: (name: string, uri: string, isReadOnly: boolean) => SavedProfile;
   deleteProfile: (id: string) => void;
   connectProfile: (profile: SavedProfile) => Promise<boolean>;
   disconnect: () => void;
@@ -119,6 +119,12 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const [theme, setThemeState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const fromDoc = document.documentElement.getAttribute('data-theme');
+        if (fromDoc) return fromDoc;
+      } catch {}
+    }
     return getStorageItem('db_explorer_theme') || 'theme-mongo';
   });
 
@@ -144,8 +150,20 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return DEFAULT_PROFILES[0];
   });
 
-  const [selectedDb, setSelectedDb] = useState<string | null>(null);
-  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
+  const [selectedDb, setSelectedDbState] = useState<string | null>(null);
+  const setSelectedDb = (db: string | null) => {
+    setSelectedDbState(db);
+    if (db) setStorageItem('db_explorer_active_db', db);
+    else removeStorageItem('db_explorer_active_db');
+  };
+
+  const [selectedCollection, setSelectedCollectionState] = useState<string | null>(null);
+  const setSelectedCollection = (coll: string | null) => {
+    setSelectedCollectionState(coll);
+    if (coll) setStorageItem('db_explorer_active_coll', coll);
+    else removeStorageItem('db_explorer_active_coll');
+  };
+
   const [databases, setDatabases] = useState<any[]>([]);
   const [collections, setCollections] = useState<any[]>([]);
   const [readOnlyMode, setReadOnlyMode] = useState<boolean>(activeProfile?.isReadOnly || false);
@@ -154,7 +172,7 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [loadingDbs, setLoadingDbs] = useState<boolean>(false);
   const [loadingCollections, setLoadingCollections] = useState<boolean>(false);
 
-  // Tabs
+  // Tabs with client hydration
   const [tabs, setTabs] = useState<CollectionTab[]>([]);
   const [activeTabId, setActiveTabIdState] = useState<string | null>(null);
 
@@ -194,6 +212,20 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (savedSnippets) {
       try { setSavedQueries(JSON.parse(savedSnippets)); } catch {}
     }
+
+    const savedDb = getStorageItem('db_explorer_active_db');
+    if (savedDb) setSelectedDbState(savedDb);
+
+    const savedColl = getStorageItem('db_explorer_active_coll');
+    if (savedColl) setSelectedCollectionState(savedColl);
+
+    const savedTabs = getStorageItem('db_explorer_tabs');
+    if (savedTabs) {
+      try { setTabs(JSON.parse(savedTabs)); } catch {}
+    }
+
+    const savedTabId = getStorageItem('db_explorer_active_tab_id');
+    if (savedTabId) setActiveTabIdState(savedTabId);
   }, []);
 
   useEffect(() => {
@@ -216,7 +248,7 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, []);
 
-  const saveProfile = (name: string, uri: string, isReadOnly: boolean) => {
+  const saveProfile = (name: string, uri: string, isReadOnly: boolean): SavedProfile => {
     const newProfile: SavedProfile = {
       id: Date.now().toString(),
       name,
@@ -225,6 +257,7 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       color: '#' + Math.floor(Math.random()*16777215).toString(16)
     };
     setSavedProfiles(prev => [...prev, newProfile]);
+    return newProfile;
   };
 
   const deleteProfile = (id: string) => {
@@ -260,9 +293,14 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (dbsRes.data.success) {
         setDatabases(dbsRes.data.databases);
         if (dbsRes.data.databases.length > 0) {
-          const firstDb = dbsRes.data.databases[0].name;
-          setSelectedDb(firstDb);
-          await loadCollections(profile.uri, firstDb);
+          const savedDb = getStorageItem('db_explorer_active_db');
+          const savedColl = getStorageItem('db_explorer_active_coll');
+          const targetDb = (savedDb && dbsRes.data.databases.some((d: any) => d.name === savedDb))
+            ? savedDb
+            : dbsRes.data.databases[0].name;
+
+          setSelectedDb(targetDb);
+          await loadCollections(profile.uri, targetDb, savedColl || undefined);
         }
       }
       setLoadingDbs(false);
@@ -283,7 +321,11 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       });
       if (res.data.success) {
         setCollections(res.data.collections);
-        const collToOpen = targetCollection || (res.data.collections.length > 0 ? res.data.collections[0].name : null);
+        const savedColl = getStorageItem('db_explorer_active_coll');
+        const collToOpen = targetCollection ||
+          (savedColl && res.data.collections.some((c: any) => c.name === savedColl) ? savedColl : null) ||
+          (res.data.collections.length > 0 ? res.data.collections[0].name : null);
+
         if (collToOpen) {
           openTab(dbName, collToOpen);
         } else {
@@ -316,15 +358,19 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSelectedDb(dbName);
     setSelectedCollection(collectionName);
     setActiveTabIdState(tabId);
+    setStorageItem('db_explorer_active_tab_id', tabId);
 
     setTabs(prev => {
-      if (prev.some(t => t.id === tabId)) return prev;
-      return [...prev, { id: tabId, dbName, collectionName }];
+      const exists = prev.some(t => t.id === tabId);
+      const next = exists ? prev : [...prev, { id: tabId, dbName, collectionName }];
+      setStorageItem('db_explorer_tabs', JSON.stringify(next));
+      return next;
     });
   };
 
   const setActiveTabId = async (tabId: string) => {
     setActiveTabIdState(tabId);
+    setStorageItem('db_explorer_active_tab_id', tabId);
     const target = tabs.find(t => t.id === tabId);
     if (!target) return;
 
@@ -340,14 +386,18 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const closeTab = (tabId: string) => {
     setTabs(prev => {
       const newTabs = prev.filter(t => t.id !== tabId);
+      setStorageItem('db_explorer_tabs', JSON.stringify(newTabs));
       if (activeTabId === tabId && newTabs.length > 0) {
         const last = newTabs[newTabs.length - 1]!;
         setSelectedDb(last.dbName);
         setSelectedCollection(last.collectionName);
         setActiveTabIdState(last.id);
+        setStorageItem('db_explorer_active_tab_id', last.id);
       } else if (newTabs.length === 0) {
         setSelectedCollection(null);
         setActiveTabIdState(null);
+        removeStorageItem('db_explorer_active_coll');
+        removeStorageItem('db_explorer_active_tab_id');
       }
       return newTabs;
     });
@@ -355,7 +405,7 @@ export const ConnectionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const addQueryHistory = (query: any) => {
     setQueryHistory(prev => [
-      { id: Date.now().toString(), query, timestamp: new Date().toLocaleTimeString() },
+      { id: Date.now().toString(), query, timestamp: new Date().toISOString() },
       ...prev.slice(0, 19)
     ]);
   };

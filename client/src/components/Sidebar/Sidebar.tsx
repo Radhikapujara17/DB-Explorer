@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Database, Folder, Table, Search, HardDrive, Layers, RefreshCw, Server, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Database, Folder, Table, Search, HardDrive, Layers, RefreshCw, Server, Plus, ChevronLeft, ChevronRight, X, Trash2 } from 'lucide-react';
+import { ConfirmDestructionModal } from '../Common/ConfirmDestructionModal';
+import axios from 'axios';
 import { useConnection } from '../../context/ConnectionContext';
 
 interface SidebarProps {
@@ -28,8 +30,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
     loadingCollections,
     refreshDatabases,
     refreshCollections,
-    isConnected
+    isConnected,
+    readOnlyMode,
+    activeProfile
   } = useConnection();
+
+  const [collToDrop, setCollToDrop] = useState<string | null>(null);
+  const [dropError, setDropError] = useState<string | null>(null);
+
+  const handleConfirmDropCollection = async () => {
+    if (!collToDrop || !selectedDb || readOnlyMode) return;
+    const targetColl = collToDrop;
+    setCollToDrop(null);
+    setDropError(null);
+    try {
+      await axios.delete(`/api/collections/${selectedDb}/${targetColl}`, {
+        headers: {
+          'x-mongo-uri': activeProfile?.uri,
+          'x-readonly': readOnlyMode ? 'true' : 'false'
+        }
+      });
+      refreshCollections();
+      if (selectedCollection === targetColl) {
+        selectCollection('');
+      }
+    } catch (err: any) {
+      setDropError(err.response?.data?.error || err.message || 'Drop collection failed');
+      setTimeout(() => setDropError(null), 5000);
+    }
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -105,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Collection Search */}
       <div className="p-2 border-b border-[var(--border-color)]">
         <div className="relative">
-          <Search className="db-icon-sm db-icon-muted absolute left-2.5 top-2.5" />
+          <Search className="db-icon-sm db-icon-muted absolute right-2.5 top-2.5" />
           <input
             type="text"
             placeholder="Filter collections..."
@@ -127,6 +156,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
+        {dropError && (
+          <div className="p-2 rounded bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px] leading-tight">
+            {dropError}
+          </div>
+        )}
+
         {!isConnected && (
           <div className="p-6 text-center db-text-xs db-text-muted">
             No active database connection.
@@ -136,23 +171,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {filteredCollections.map(coll => {
           const isSelected = selectedCollection === coll.name;
           return (
-            <button
+            <div
               key={coll.name}
-              onClick={() => {
-                selectCollection(coll.name);
-                if (onCloseMobile) onCloseMobile();
-              }}
-              className={`db-collection-item ${isSelected ? 'active' : ''}`}
+              className={`db-collection-item group flex items-center justify-between ${isSelected ? 'active' : ''}`}
             >
-              <div className="db-row-start db-truncate-sm">
-                <Table className={`db-icon-sm ${isSelected ? 'db-icon-emerald' : 'db-icon-muted'}`} />
-                <span className="db-truncate-sm">{coll.name}</span>
-              </div>
+              <button
+                onClick={() => {
+                  selectCollection(coll.name);
+                  if (onCloseMobile) onCloseMobile();
+                }}
+                className="flex-1 flex items-center gap-2 min-w-0 text-left cursor-pointer"
+              >
+                <Table className={`db-icon-sm shrink-0 ${isSelected ? 'db-icon-emerald' : 'db-icon-muted'}`} />
+                <span className="db-truncate-sm font-medium">{coll.name}</span>
+              </button>
 
-              <span className="db-badge db-badge-green db-font-mono db-text-xs">
-                {coll.count.toLocaleString()}
-              </span>
-            </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="db-badge db-badge-green db-font-mono db-text-xs">
+                  {coll.count.toLocaleString()}
+                </span>
+                {!readOnlyMode && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCollToDrop(coll.name);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-rose-400 hover:bg-rose-500/20 transition-opacity"
+                    title={`Drop collection ${coll.name}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
@@ -224,6 +275,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ) : (
           sidebarContent
         )}
+        <ConfirmDestructionModal
+          isOpen={!!collToDrop}
+          title={`Drop Collection "${collToDrop}"`}
+          message={`This will permanently delete the collection "${collToDrop}" and all its documents and indexes from database "${selectedDb}". This operation cannot be reversed.`}
+          confirmTargetName={collToDrop || ''}
+          confirmButtonText="Drop Collection"
+          onConfirm={handleConfirmDropCollection}
+          onClose={() => setCollToDrop(null)}
+        />
       </aside>
     </>
   );

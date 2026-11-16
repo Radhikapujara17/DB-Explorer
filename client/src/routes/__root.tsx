@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import indexCss from "../index.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { ConnectionProvider } from "../context/ConnectionContext";
 
 function NotFoundComponent() {
   return (
@@ -102,8 +103,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=localStorage.getItem('db_explorer_theme')||'theme-mongo';document.documentElement.setAttribute('data-theme',s);}catch(e){}})();`,
+          }}
+        />
         <HeadContent />
       </head>
       <body>
@@ -119,8 +125,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <ConnectionProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </ConnectionProvider>
     </QueryClientProvider>
   );
 }

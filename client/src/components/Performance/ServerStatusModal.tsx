@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Server, X, Activity, Cpu, HardDrive, RefreshCw, Layers } from 'lucide-react';
+import { Server, X, Activity, Cpu, HardDrive, RefreshCw, Layers, AlertCircle } from 'lucide-react';
 import { useConnection } from '../../context/ConnectionContext';
 import axios from 'axios';
 
@@ -12,6 +12,7 @@ export const ServerStatusModal: React.FC<ServerStatusModalProps> = ({ isOpen, on
   const { activeProfile } = useConnection();
   const [status, setStatus] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && activeProfile) {
@@ -22,19 +23,32 @@ export const ServerStatusModal: React.FC<ServerStatusModalProps> = ({ isOpen, on
   const fetchStatus = async () => {
     if (!activeProfile) return;
     setLoading(true);
+    setError(null);
     try {
       const res = await axios.get('/api/server/status', {
         headers: { 'x-mongo-uri': activeProfile.uri }
       });
       if (res.data.success) {
         setStatus(res.data.serverStatus);
+      } else {
+        setError(res.data.error || 'Diagnostic inspection failed.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching server status:', err);
+      setError(err.response?.data?.error || err.message || 'Unable to fetch server status. Cluster administrative role required.');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -46,8 +60,9 @@ export const ServerStatusModal: React.FC<ServerStatusModalProps> = ({ isOpen, on
   };
 
   return (
-    <div className="db-modal-overlay">
-      <div className="db-modal-box animate-fade-in db-flex db-flex-col">
+    <div className="db-modal-overlay" onClick={onClose}>
+      <div className="db-modal-box animate-fade-in db-flex db-flex-col" onClick={(e) => e.stopPropagation()}>
+      
         <div className="db-modal-header">
           <div className="db-row-start">
             <Server className="db-icon-sm db-icon-emerald" />
@@ -66,6 +81,18 @@ export const ServerStatusModal: React.FC<ServerStatusModalProps> = ({ isOpen, on
         <div className="db-modal-body db-space-y-4">
           {loading && !status ? (
             <div className="db-p-6 db-text-center db-text-xs db-text-muted">Loading server diagnostics...</div>
+          ) : error ? (
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-amber-200">
+                <AlertCircle className="w-4 h-4 text-amber-400" /> Server Diagnostics Unavailable
+              </div>
+              <p className="text-[11px] leading-relaxed text-amber-300/80">
+                {error}
+              </p>
+              <p className="text-[10px] text-[var(--text-muted)]">
+                Note: MongoDB administrative commands require elevated privileges (e.g. clusterMonitor role) which may be restricted on shared clusters like MongoDB Atlas M0.
+              </p>
+            </div>
           ) : status ? (
             <>
               <div className="db-grid-2">

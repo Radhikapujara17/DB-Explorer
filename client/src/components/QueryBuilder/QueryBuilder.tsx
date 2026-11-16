@@ -10,11 +10,137 @@ export interface VisualRule {
   value: string;
 }
 
+function serializeMongoQuery(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (obj instanceof RegExp) {
+    return { $regex: obj.source, $options: obj.flags };
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(serializeMongoQuery);
+  }
+  const result: Record<string, any> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (val instanceof RegExp) {
+      result[key] = { $regex: val.source, $options: val.flags };
+    } else if (typeof val === 'object' && val !== null) {
+      result[key] = serializeMongoQuery(val);
+    } else {
+      result[key] = val;
+    }
+  }
+  return result;
+}
+
+export function parseFilterString(rawText: string, schemaFields: string[] = []): Record<string, any> {
+  const trimmed = rawText.trim();
+  if (!trimmed || trimmed === '{}') return {};
+
+  // 1. Try native strict JSON first
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch {}
+
+  // 2. Normalize MongoDB shell functions:
+  // e.g. ObjectId("...") -> {"$oid": "..."}
+  // e.g. ISODate("...") or new Date("...") -> {"$date": "..."}
+  let normalized = trimmed
+    .replace(/ObjectId\s*\(\s*['"]([0-9a-fA-F]{24})['"]\s*\)/g, '{"$oid":"$1"}')
+    .replace(/(?:ISODate|new\s+Date)\s*\(\s*['"]([^'"]+)['"]\s*\)/g, '{"$date":"$1"}')
+    .replace(/NumberLong\s*\(\s*['"]?(\d+)['"]?\s*\)/g, '$1');
+
+  // 3. Shorthand comparisons without outer braces (e.g. price >= 50 or status = active)
+  if (!normalized.startsWith('{')) {
+    const compMatch = normalized.match(/^([a-zA-Z0-9_.-]+)\s*(=|!=|>=|<=|>|<)\s*(.+)$/);
+    if (compMatch) {
+      const [, field, op, valStr] = compMatch;
+      let cleanVal: any = valStr.trim();
+      if ((cleanVal.startsWith('"') && cleanVal.endsWith('"')) || (cleanVal.startsWith("'") && cleanVal.endsWith("'"))) {
+        cleanVal = cleanVal.slice(1, -1);
+      } else if (cleanVal === 'true') cleanVal = true;
+      else if (cleanVal === 'false') cleanVal = false;
+      else if (cleanVal === 'null') cleanVal = null;
+      else if (!isNaN(Number(cleanVal)) && cleanVal !== '') cleanVal = Number(cleanVal);
+
+      if (op === '=') return { [field]: cleanVal };
+      if (op === '!=') return { [field]: { $ne: cleanVal } };
+      if (op === '>') return { [field]: { $gt: cleanVal } };
+      if (op === '>=') return { [field]: { $gte: cleanVal } };
+      if (op === '<') return { [field]: { $lt: cleanVal } };
+      if (op === '<=') return { [field]: { $lte: cleanVal } };
+    }
+
+    // Shorthand key: value (e.g. status: active or category: Electronics)
+    const colonMatch = normalized.match(/^([a-zA-Z0-9_.-]+)\s*:\s*(.+)$/);
+    if (colonMatch) {
+      let val = colonMatch[2].trim();
+      if (!val.startsWith('{') && !val.startsWith('[')) {
+        if (!val.startsWith('"') && !val.startsWith("'") && isNaN(Number(val)) && val !== 'true' && val !== 'false' && val !== 'null') {
+          val = `"${val}"`;
+        }
+      }
+      normalized = `{ "${colonMatch[1]}": ${val} }`;
+    }
+  }
+
+  // 4. If starting or ending with braces, treat as object query
+  if (normalized.startsWith('{') || normalized.endsWith('}')) {
+    if (!normalized.startsWith('{') || !normalized.endsWith('}')) {
+      throw new Error(`Invalid query: missing opening or closing brace in '${trimmed}'`);
+    }
+
+    try {
+      const safeEval = new Function(`"use strict"; return (${normalized});`);
+      const result = safeEval();
+      if (typeof result === 'object' && result !== null && !Array.isArray(result)) {
+        return serializeMongoQuery(result);
+      }
+    } catch {}
+
+    // Fallback: quote unquoted identifiers (both keys and unquoted string values)
+    try {
+      let quoted = normalized.replace(/([{,]\s*)([a-zA-Z0-9_$-]+)\s*:/g, '$1"$2":');
+      quoted = quoted.replace(/'([^']*)'/g, '"$1"');
+      quoted = quoted.replace(/:\s*([a-zA-Z_][a-zA-Z0-9_-]*)\s*([,}])/g, (match, word, end) => {
+        if (['true', 'false', 'null', 'undefined', 'NaN', 'Infinity'].includes(word)) {
+          return `: ${word}${end}`;
+        }
+        return `: "${word}"${end}`;
+      });
+      const parsed = JSON.parse(quoted);
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        return serializeMongoQuery(parsed);
+      }
+    } catch {}
+
+    throw new Error(`Invalid MongoDB query syntax: ${trimmed}`);
+  }
+
+  // 5. If it's a 24-char hex string, treat as _id filter
+  if (/^[0-9a-fA-F]{24}$/.test(trimmed)) {
+    return { _id: { $oid: trimmed } };
+  }
+
+  // 6. Otherwise, treat as full-text search across schema fields
+  const searchFields = schemaFields.length > 0
+    ? schemaFields.slice(0, 8)
+    : ['name', 'title', 'email', 'username', 'description', 'status', 'label', 'category', 'sku'];
+
+  return {
+    $or: searchFields.map(f => ({
+      [f]: { $regex: trimmed, $options: 'i' }
+    }))
+  };
+}
+
 interface QueryBuilderProps {
   onExecuteQuery: (queryObj: { filter: any; projection?: any; sort?: any }) => void;
   schemaFields?: string[];
   executionTimeMs?: number | null;
   loading?: boolean;
+  activeQuery?: { filter: any; projection?: any; sort?: any };
 }
 
 const OPERATORS = [
@@ -33,7 +159,8 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
   onExecuteQuery,
   schemaFields = [],
   executionTimeMs,
-  loading
+  loading,
+  activeQuery
 }) => {
   const { theme, selectedCollection } = useConnection();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -49,15 +176,27 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
   const [sortJson, setSortJson] = useState('{}');
   const [jsonError, setJsonError] = useState<string | null>(null);
 
-  // Reset query inputs when selected collection changes
+  // Sync inputs with activeQuery (persisted across refresh & tab switches)
   useEffect(() => {
-    setFilterInput('');
-    setFilterJson('{}');
-    setProjectionJson('{}');
-    setSortJson('{}');
+    if (activeQuery?.filter && Object.keys(activeQuery.filter).length > 0) {
+      setFilterInput(JSON.stringify(activeQuery.filter));
+      setFilterJson(JSON.stringify(activeQuery.filter, null, 2));
+    } else {
+      setFilterInput('');
+      setFilterJson('{}');
+    }
+    if (activeQuery?.sort && Object.keys(activeQuery.sort).length > 0) {
+      setSortJson(JSON.stringify(activeQuery.sort, null, 2));
+    } else {
+      setSortJson('{}');
+    }
+    if (activeQuery?.projection && Object.keys(activeQuery.projection).length > 0) {
+      setProjectionJson(JSON.stringify(activeQuery.projection, null, 2));
+    } else {
+      setProjectionJson('{}');
+    }
     setJsonError(null);
-    setRules([{ id: '1', field: '', operator: '$regex', value: '' }]);
-  }, [selectedCollection]);
+  }, [activeQuery]);
 
   // Synchronize visual rules with filterJson & filterInput
   useEffect(() => {
@@ -107,32 +246,39 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
     setRules(prev => prev.map(r => r.id === id ? { ...r, [key]: val } : r));
   };
 
-  const handleRun = () => {
+  // Close drawer on Escape key
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDrawerOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [drawerOpen]);
+
+  const handleRun = (overrideText?: string) => {
     setJsonError(null);
     try {
-      let filterObj: any = {};
-      const rawText = filterInput.trim();
+      const rawText = (overrideText !== undefined ? overrideText : filterInput).trim();
+      const filterObj = parseFilterString(rawText, schemaFields);
 
-      if (rawText) {
-        if (rawText.startsWith('{') && rawText.endsWith('}')) {
-          // Direct JSON query
-          filterObj = JSON.parse(rawText);
-        } else {
-          // Plain keyword search across schema fields
-          if (schemaFields.length > 0) {
-            filterObj = {
-              $or: schemaFields.slice(0, 5).map(field => ({
-                [field]: { $regex: rawText, $options: 'i' }
-              }))
-            };
-          } else {
-            filterObj = { title: { $regex: rawText, $options: 'i' } };
-          }
+      let projection: any = {};
+      if (projectionJson.trim() && projectionJson !== '{}') {
+        try {
+          projection = JSON.parse(projectionJson);
+        } catch (e: any) {
+          throw new Error(`Projection JSON syntax error: ${e.message}`);
         }
       }
 
-      const projection = projectionJson.trim() && projectionJson !== '{}' ? JSON.parse(projectionJson) : {};
-      const sort = sortJson.trim() && sortJson !== '{}' ? JSON.parse(sortJson) : {};
+      let sort: any = {};
+      if (sortJson.trim() && sortJson !== '{}') {
+        try {
+          sort = JSON.parse(sortJson);
+        } catch (e: any) {
+          throw new Error(`Sort JSON syntax error: ${e.message}`);
+        }
+      }
 
       onExecuteQuery({ filter: filterObj, projection, sort });
     } catch (err: any) {
@@ -151,10 +297,22 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
   };
 
   const handleApplyFromVisual = () => {
-    if (filterJson && filterJson !== '{}') {
-      setFilterInput(filterJson.replace(/\n\s*/g, ' '));
+    let sourceText = '';
+    if (activeTab === 'code') {
+      sourceText = filterJson.trim();
+    } else if (activeTab === 'visual') {
+      sourceText = filterJson && filterJson !== '{}' ? filterJson.replace(/\n\s*/g, ' ') : '';
+    } else {
+      sourceText = filterInput.trim();
     }
-    handleRun();
+
+    if (sourceText && sourceText !== '{}') {
+      setFilterInput(sourceText);
+      handleRun(sourceText);
+    } else {
+      setFilterInput('');
+      handleRun('');
+    }
     setDrawerOpen(false);
   };
 
@@ -201,7 +359,7 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
 
           {/* Find Button */}
           <button
-            onClick={handleRun}
+            onClick={() => handleRun()}
             disabled={loading}
             className="db-btn db-btn-primary db-text-xs py-1 px-2.5"
             title="Execute query (Enter)"
@@ -245,6 +403,23 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Inline Query Syntax Error Alert (visible even when drawer is closed) */}
+      {jsonError && !drawerOpen && (
+        <div className="mx-4 mt-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-amber-400 text-xs animate-fade-in">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{jsonError}</span>
+          </div>
+          <button
+            onClick={() => setJsonError(null)}
+            className="p-0.5 hover:text-white transition-colors"
+            title="Dismiss error"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
 
       {/* 2. Options / Advanced Filter Drawer (Slides open on demand without pushing table) */}
       {drawerOpen && (

@@ -22,11 +22,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         isOpen ? onClose() : null;
+      } else if (e.key === 'Escape' && isOpen) {
+        onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -72,6 +74,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       }
     },
     {
+      id: 'explorer-mode',
+      category: 'View',
+      label: 'Switch to Document Explorer & Table View',
+      icon: <Table className="w-4 h-4 text-emerald-400" />,
+      handler: () => {
+        onSelectAction({ type: 'mode-explorer' });
+        onClose();
+      }
+    },
+    {
       id: 'aggregation-mode',
       category: 'View',
       label: 'Switch to Aggregation Pipeline Visualizer',
@@ -89,8 +101,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   );
 
   return (
-    <div className="db-modal-overlay">
-      <div className="db-modal-box animate-fade-in db-flex db-flex-col">
+    <div className="db-modal-overlay" onClick={onClose}>
+      <div className="db-modal-box animate-fade-in db-flex db-flex-col" onClick={(e) => e.stopPropagation()}>
+      
         {/* Input header */}
         <div className="db-modal-header gap-2">
           <Search className="db-icon-sm db-icon-emerald" />

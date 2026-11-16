@@ -48,6 +48,11 @@ export const getCollections = async (req: Request, res: Response): Promise<void>
 
 export const createCollection = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (req.headers['x-readonly'] === 'true') {
+      res.status(403).json({ success: false, error: 'Security Guard: Server-side Read-Only mode is enabled. Creating collections is prohibited.' });
+      return;
+    }
+
     const connectionUri = (req.headers['x-mongo-uri'] as string) || req.body.connectionUri;
     const { dbName } = req.params;
     const { collectionName } = req.body;
@@ -66,6 +71,11 @@ export const createCollection = async (req: Request, res: Response): Promise<voi
 
 export const dropCollection = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (req.headers['x-readonly'] === 'true') {
+      res.status(403).json({ success: false, error: 'Security Guard: Server-side Read-Only mode is enabled. Dropping collections is prohibited.' });
+      return;
+    }
+
     const connectionUri = (req.headers['x-mongo-uri'] as string) || req.body.connectionUri;
     const { dbName, collectionName } = req.params;
 

@@ -1,3 +1,4 @@
+import { Link, useRouterState, useNavigate } from '@tanstack/react-router';
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header/Header';
 import { WorkspaceTabBar } from './components/Header/WorkspaceTabBar';
@@ -14,11 +15,23 @@ import { ServerStatusModal } from './components/Performance/ServerStatusModal';
 import { AIAssistantDrawer } from './components/AIAssistant/AIAssistantDrawer';
 import { CommandPalette } from './components/CommandPalette/CommandPalette';
 import { QueryHistoryDrawer } from './components/QueryBuilder/QueryHistoryDrawer';
+import { ConfirmDestructionModal } from './components/Common/ConfirmDestructionModal';
+import { ExportModal } from './components/Export/ExportModal';
+import { ImportWizardModal } from './components/Import/ImportWizardModal';
 import { useConnection } from './context/ConnectionContext';
 import { Layers, Database as DatabaseIcon, ShieldAlert, Bookmark, Command, Activity, FolderPlus } from 'lucide-react';
 import axios from 'axios';
 
-export const AppContent: React.FC = () => {
+interface AppContentProps {
+  initialMode?: 'explorer' | 'aggregation';
+}
+
+export const AppContent: React.FC<AppContentProps> = ({ initialMode }) => {
+  const routerState = useRouterState();
+  const navigate = useNavigate();
+  const currentPath = routerState?.location?.pathname || (initialMode === 'aggregation' ? '/aggregation' : '/');
+  const mainMode: 'explorer' | 'aggregation' = currentPath === '/aggregation' ? 'aggregation' : 'explorer';
+
   const {
     activeProfile,
     selectedDb,
@@ -29,9 +42,6 @@ export const AppContent: React.FC = () => {
     selectDatabase,
     refreshCollections
   } = useConnection();
-
-  // Navigation mode: 'explorer' | 'aggregation'
-  const [mainMode, setMainMode] = useState<'explorer' | 'aggregation'>('explorer');
 
   // Sidebar collapsed state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -49,14 +59,34 @@ export const AppContent: React.FC = () => {
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [selectedDocToEdit, setSelectedDocToEdit] = useState<any | null>(null);
 
+  // Export, Import & Destructive Confirmation Safeguard Modals
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedDocsForExport, setSelectedDocsForExport] = useState<any[]>([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<any | null>(null);
+  const [bulkDocsToDelete, setBulkDocsToDelete] = useState<any[] | null>(null);
+
   // Query & Document Explorer State
   const [documents, setDocuments] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [executionTimeMs, setExecutionTimeMs] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [queryError, setQueryError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
   const [schemaFields, setSchemaFields] = useState<string[]>([]);
+
+  const getSavedQuery = (db: string | null, coll: string | null) => {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined' || !db || !coll) {
+      return { filter: {}, projection: {}, sort: {} };
+    }
+    try {
+      const saved = localStorage.getItem(`db_query_${db}_${coll}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { filter: {}, projection: {}, sort: {} };
+  };
 
   const [activeQuery, setActiveQuery] = useState<{ filter: any; projection?: any; sort?: any }>({
     filter: {},
@@ -64,10 +94,36 @@ export const AppContent: React.FC = () => {
     sort: {}
   });
 
-  // Reset pagination and query filter whenever collection or db changes
   useEffect(() => {
-    setPage(1);
-    setActiveQuery({ filter: {}, projection: {}, sort: {} });
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const savedDb = localStorage.getItem('db_explorer_active_db');
+      const savedColl = localStorage.getItem('db_explorer_active_coll');
+      if (savedDb && savedColl) {
+        const query = getSavedQuery(savedDb, savedColl);
+        setActiveQuery(query);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  const prevCollRef = React.useRef<string | null>(selectedCollection);
+  useEffect(() => {
+    if (prevCollRef.current !== selectedCollection) {
+      prevCollRef.current = selectedCollection;
+      setPage(1);
+      const query = getSavedQuery(selectedDb, selectedCollection);
+      setActiveQuery(query);
+    }
   }, [selectedDb, selectedCollection]);
 
   // Fetch documents whenever selected collection, page, limit, or query changes
@@ -101,9 +157,14 @@ export const AppContent: React.FC = () => {
         setDocuments(res.data.documents || []);
         setTotalCount(res.data.totalCount || 0);
         setExecutionTimeMs(res.data.executionTimeMs);
+        setQueryError(null);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching documents:', err);
+      const errMsg = err.response?.data?.error || err.message || 'Error executing query';
+      setQueryError(errMsg);
+      setDocuments([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
@@ -123,15 +184,28 @@ export const AppContent: React.FC = () => {
 
   const handleExecuteQuery = (queryObj: { filter: any; projection?: any; sort?: any }) => {
     setPage(1);
+    setQueryError(null);
     setActiveQuery(queryObj);
     addQueryHistory(queryObj);
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined' && selectedDb && selectedCollection) {
+      try {
+        const hasContent = (queryObj.filter && Object.keys(queryObj.filter).length > 0) ||
+                           (queryObj.sort && Object.keys(queryObj.sort).length > 0) ||
+                           (queryObj.projection && Object.keys(queryObj.projection).length > 0);
+        if (hasContent) {
+          localStorage.setItem(`db_query_${selectedDb}_${selectedCollection}`, JSON.stringify(queryObj));
+        } else {
+          localStorage.removeItem(`db_query_${selectedDb}_${selectedCollection}`);
+        }
+      } catch {}
+    }
   };
 
   const handleApplyAiQuery = (aiResult: any) => {
     if (aiResult.type === 'aggregate' && aiResult.pipeline) {
-      setMainMode('aggregation');
+      navigate({ to: '/aggregation' });
     } else {
-      setMainMode('explorer');
+      navigate({ to: '/' });
       handleExecuteQuery({
         filter: aiResult.filter || {},
         projection: aiResult.projection || {},
@@ -146,32 +220,63 @@ export const AppContent: React.FC = () => {
     } else if (action.type === 'open-ai') {
       setIsAiDrawerOpen(true);
     } else if (action.type === 'mode-aggregation') {
-      setMainMode('aggregation');
+      navigate({ to: '/aggregation' });
+    } else if (action.type === 'mode-explorer') {
+      navigate({ to: '/' });
     }
   };
 
-  const handleDeleteDoc = async (doc: any) => {
-    if (readOnlyMode) {
-      alert('Read-Only Safety Guard is active! Writes and deletes are disabled.');
-      return;
-    }
+  const handleDeleteDoc = (doc: any) => {
+    if (readOnlyMode) return;
+    setBulkDocsToDelete(null);
+    setDocToDelete(doc);
+    setIsDeleteModalOpen(true);
+  };
 
-    if (!confirm('Are you sure you want to delete this document?')) return;
+  const handleBulkDelete = (docs: any[]) => {
+    if (readOnlyMode || docs.length === 0) return;
+    setDocToDelete(null);
+    setBulkDocsToDelete(docs);
+    setIsDeleteModalOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
     try {
-      const filter = doc._id ? { _id: doc._id } : { ...doc };
-      const res = await axios.delete(
-        `/api/documents/${selectedDb}/${selectedCollection}/delete`,
-        {
-          data: { filter },
-          headers: { 'x-mongo-uri': activeProfile?.uri }
+      if (bulkDocsToDelete && bulkDocsToDelete.length > 0) {
+        const ids = bulkDocsToDelete.map(d => d._id?.$oid ? { $oid: d._id.$oid } : d._id);
+        const res = await axios.delete(
+          `/api/documents/${selectedDb}/${selectedCollection}/delete`,
+          {
+            data: { filter: { _id: { $in: ids } }, isMany: true },
+            headers: {
+              'x-mongo-uri': activeProfile?.uri,
+              'x-readonly': readOnlyMode ? 'true' : 'false'
+            }
+          }
+        );
+        if (res.data.success) {
+          fetchDocuments();
         }
-      );
-      if (res.data.success) {
-        fetchDocuments();
+        setBulkDocsToDelete(null);
+      } else if (docToDelete) {
+        const filter = docToDelete._id ? { _id: docToDelete._id } : { ...docToDelete };
+        const res = await axios.delete(
+          `/api/documents/${selectedDb}/${selectedCollection}/delete`,
+          {
+            data: { filter },
+            headers: {
+              'x-mongo-uri': activeProfile?.uri,
+              'x-readonly': readOnlyMode ? 'true' : 'false'
+            }
+          }
+        );
+        if (res.data.success) {
+          fetchDocuments();
+        }
+        setDocToDelete(null);
       }
     } catch (err: any) {
-      alert(`Delete failed: ${err.message}`);
+      console.error('Delete failed:', err);
     }
   };
 
@@ -184,9 +289,6 @@ export const AppContent: React.FC = () => {
         onOpenSchemaModal={() => setIsSchemaModalOpen(true)}
         onToggleSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
       />
-
-      {/* Multi-Tab Workspace Bar */}
-      <WorkspaceTabBar />
 
       {/* Main Body Layout */}
       <div className="db-main-body">
@@ -201,26 +303,29 @@ export const AppContent: React.FC = () => {
 
         {/* Main Content Pane */}
         <main className="db-content-pane">
+          {/* Multi-Tab Workspace Bar (inside content area) */}
+          <WorkspaceTabBar />
+
           {/* Sub-Header Mode Switcher & Quick Command Bar */}
           <div className="db-sub-header">
             <div className="db-row-start">
-              <button
-                onClick={() => setMainMode('explorer')}
+              <Link
+                to="/"
                 className={`db-sub-header-btn ${
                   mainMode === 'explorer' ? 'active-emerald' : ''
                 }`}
               >
                 <DatabaseIcon className="db-icon-sm db-icon-emerald" /> Document Explorer
-              </button>
+              </Link>
 
-              <button
-                onClick={() => setMainMode('aggregation')}
+              <Link
+                to="/aggregation"
                 className={`db-sub-header-btn ${
                   mainMode === 'aggregation' ? 'active-purple' : ''
                 }`}
               >
                 <Layers className="db-icon-sm db-icon-purple" /> Aggregation Pipeline
-              </button>
+              </Link>
             </div>
 
             <div className="db-row-end">
@@ -290,6 +395,7 @@ export const AppContent: React.FC = () => {
                 schemaFields={schemaFields}
                 executionTimeMs={executionTimeMs}
                 loading={loading}
+                activeQuery={activeQuery}
               />
 
               {/* Document Viewer */}
@@ -298,6 +404,11 @@ export const AppContent: React.FC = () => {
                 totalCount={totalCount}
                 loading={loading}
                 executionTimeMs={executionTimeMs}
+                queryError={queryError}
+                onClearQueryError={() => {
+                  setQueryError(null);
+                  handleExecuteQuery({ filter: {}, projection: {}, sort: {} });
+                }}
                 page={page}
                 limit={limit}
                 onPageChange={(p) => setPage(p)}
@@ -306,6 +417,12 @@ export const AppContent: React.FC = () => {
                 onOpenEditModal={(doc) => { setSelectedDocToEdit(doc); setIsDocModalOpen(true); }}
                 onOpenCreateModal={() => { setSelectedDocToEdit(null); setIsDocModalOpen(true); }}
                 onDeleteDoc={handleDeleteDoc}
+                onBulkDeleteDocs={handleBulkDelete}
+                onOpenExportModal={(selectedDocs) => {
+                  setSelectedDocsForExport(selectedDocs);
+                  setIsExportModalOpen(true);
+                }}
+                onOpenImportModal={() => setIsImportModalOpen(true)}
               />
             </div>
           ) : (
@@ -318,6 +435,41 @@ export const AppContent: React.FC = () => {
       <ConnectionModal
         isOpen={isConnectionModalOpen}
         onClose={() => setIsConnectionModalOpen(false)}
+      />
+
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        documents={documents}
+        selectedDocuments={selectedDocsForExport}
+        totalCount={totalCount}
+        columns={Array.from(new Set(documents.flatMap(d => Object.keys(d))))}
+      />
+
+      <ImportWizardModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={() => {
+          fetchDocuments();
+          refreshCollections();
+        }}
+      />
+
+      <ConfirmDestructionModal
+        isOpen={isDeleteModalOpen}
+        title={bulkDocsToDelete ? `Delete ${bulkDocsToDelete.length} Documents` : "Delete Document"}
+        message={bulkDocsToDelete
+          ? `Are you sure you want to permanently delete these ${bulkDocsToDelete.length} selected documents from collection "${selectedCollection}"? This operation cannot be reversed.`
+          : `Are you sure you want to permanently delete this document from collection "${selectedCollection}"? This operation cannot be reversed.`
+        }
+        confirmTargetName="delete"
+        confirmButtonText={bulkDocsToDelete ? `Delete ${bulkDocsToDelete.length} Documents` : "Permanently Delete Document"}
+        onConfirm={handleConfirmDelete}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDocToDelete(null);
+          setBulkDocsToDelete(null);
+        }}
       />
 
       <SchemaInspectorModal
@@ -359,6 +511,7 @@ export const AppContent: React.FC = () => {
         onClose={() => setIsAiDrawerOpen(false)}
         onApplyQuery={handleApplyAiQuery}
         schemaFields={schemaFields}
+        collectionName={selectedCollection || ''}
       />
 
       <CommandPalette

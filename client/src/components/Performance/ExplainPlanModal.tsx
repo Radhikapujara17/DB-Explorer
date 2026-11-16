@@ -48,6 +48,15 @@ export const ExplainPlanModal: React.FC<ExplainPlanModalProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const stats = explainPlan?.executionStats;
@@ -55,8 +64,9 @@ export const ExplainPlanModal: React.FC<ExplainPlanModalProps> = ({
   const isFullScan = stage === 'COLLSCAN';
 
   return (
-    <div className="db-modal-overlay">
-      <div className="db-modal-box animate-fade-in db-flex db-flex-col">
+    <div className="db-modal-overlay" onClick={onClose}>
+      <div className="db-modal-box animate-fade-in db-flex db-flex-col" onClick={(e) => e.stopPropagation()}>
+      
         {/* Header */}
         <div className="db-modal-header">
           <div className="db-row-start">

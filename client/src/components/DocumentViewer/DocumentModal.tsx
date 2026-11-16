@@ -76,7 +76,12 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
         const res = await axios.put(
           `/api/documents/${selectedDb}/${selectedCollection}/update`,
           { filter, update: parsedDoc },
-          { headers: { 'x-mongo-uri': activeProfile?.uri } }
+          {
+            headers: {
+              'x-mongo-uri': activeProfile?.uri,
+              'x-readonly': readOnlyMode ? 'true' : 'false'
+            }
+          }
         );
         if (res.data.success) {
           onSuccess();
@@ -89,7 +94,12 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
         const res = await axios.post(
           `/api/documents/${selectedDb}/${selectedCollection}/insert`,
           { document: parsedDoc },
-          { headers: { 'x-mongo-uri': activeProfile?.uri } }
+          {
+            headers: {
+              'x-mongo-uri': activeProfile?.uri,
+              'x-readonly': readOnlyMode ? 'true' : 'false'
+            }
+          }
         );
         if (res.data.success) {
           onSuccess();
@@ -148,8 +158,11 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({
   const docIdDisplay = initialDocument?._id?.$oid || initialDocument?._id;
 
   return (
-    <div className="db-modal-overlay">
-      <div className="db-modal-box db-modal-lg db-modal-editor-box animate-fade-in">
+    <div className="db-modal-overlay" onClick={onClose}>
+      <div
+        className="db-modal-box db-modal-lg db-modal-editor-box animate-fade-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="db-modal-header">
           <div className="db-row-start db-space-x-2">

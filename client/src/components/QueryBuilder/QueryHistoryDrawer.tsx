@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { History, Bookmark, Trash2, Play, X, Plus } from 'lucide-react';
 import { useConnection } from '../../context/ConnectionContext';
 
@@ -19,6 +19,15 @@ export const QueryHistoryDrawer: React.FC<QueryHistoryDrawerProps> = ({
   const [activeTab, setActiveTab] = useState<'saved' | 'history'>('saved');
   const [snippetName, setSnippetName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -178,7 +187,14 @@ export const QueryHistoryDrawer: React.FC<QueryHistoryDrawerProps> = ({
                   <div className="flex items-center justify-between text-xs text-[var(--text-muted)] font-mono">
                     <span className="flex items-center gap-1">
                       <History className="w-3 h-3 text-purple-400" />
-                      {new Date(item.timestamp).toLocaleTimeString()}
+                      {(() => {
+                        try {
+                          const d = new Date(item.timestamp);
+                          return isNaN(d.getTime()) ? item.timestamp : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        } catch {
+                          return item.timestamp;
+                        }
+                      })()}
                     </span>
                   </div>
                   <div className="text-xs font-mono p-2.5 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-color)] text-cyan-400 overflow-x-auto max-h-36">

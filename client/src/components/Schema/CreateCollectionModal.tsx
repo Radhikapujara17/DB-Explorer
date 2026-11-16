@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FolderPlus, X, Plus, AlertCircle } from 'lucide-react';
 import { useConnection } from '../../context/ConnectionContext';
 import axios from 'axios';
@@ -19,6 +19,15 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleCreate = async () => {
@@ -34,7 +43,12 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
       const res = await axios.post(
         `/api/collections/${selectedDb}/create`,
         { collectionName: collectionName.trim() },
-        { headers: { 'x-mongo-uri': activeProfile.uri } }
+        {
+          headers: {
+            'x-mongo-uri': activeProfile.uri,
+            'x-readonly': readOnlyMode ? 'true' : 'false'
+          }
+        }
       );
       if (res.data.success) {
         onSuccess();
@@ -50,8 +64,9 @@ export const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
   };
 
   return (
-    <div className="db-modal-overlay">
-      <div className="db-modal-box animate-fade-in db-flex db-flex-col">
+    <div className="db-modal-overlay" onClick={onClose}>
+      <div className="db-modal-box animate-fade-in db-flex db-flex-col" onClick={(e) => e.stopPropagation()}>
+      
         <div className="db-modal-header">
           <div className="db-row-start">
             <FolderPlus className="db-icon-sm db-icon-emerald" />

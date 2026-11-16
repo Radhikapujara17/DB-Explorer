@@ -45,6 +45,20 @@ function normalizeFilter(filter: any): any {
   return clone;
 }
 
+const DANGEROUS_OPERATORS = ['$where', '$function', '$accumulator'];
+
+export function checkDangerousOperators(obj: any): void {
+  if (!obj || typeof obj !== 'object') return;
+  for (const key of Object.keys(obj)) {
+    if (DANGEROUS_OPERATORS.includes(key)) {
+      throw new Error(`Security Guard: Operator '${key}' contains arbitrary JavaScript evaluation risk and is prohibited on server.`);
+    }
+    if (typeof obj[key] === 'object') {
+      checkDangerousOperators(obj[key]);
+    }
+  }
+}
+
 export class MongoConnectionManager {
   private static instance: MongoConnectionManager;
   private clients: Map<string, MongoClient> = new Map();
@@ -234,14 +248,15 @@ export class MongoConnectionManager {
 
     const rawFilter = options.filter || {};
     const parsedFilter = normalizeFilter(parseEJSON(typeof rawFilter === 'string' ? rawFilter : JSON.stringify(rawFilter)));
+    checkDangerousOperators(parsedFilter);
     const projection = parseEJSON(typeof options.projection === 'string' ? options.projection : JSON.stringify(options.projection || {}));
     const sort = parseEJSON(typeof options.sort === 'string' ? options.sort : JSON.stringify(options.sort || {}));
     const limit = options.limit ?? 50;
     const skip = options.skip ?? 0;
 
-    const totalCount = await collection.countDocuments(parsedFilter);
+    const totalCount = await collection.countDocuments(parsedFilter, { maxTimeMS: 5000 });
 
-    let cursor = collection.find(parsedFilter, { projection });
+    let cursor = collection.find(parsedFilter, { projection, maxTimeMS: 5000 });
     if (Object.keys(sort).length > 0) cursor = cursor.sort(sort);
     if (skip > 0) cursor = cursor.skip(skip);
     if (limit > 0) cursor = cursor.limit(limit);
@@ -317,7 +332,8 @@ export class MongoConnectionManager {
     connectionUri: string,
     dbName: string,
     collectionName: string,
-    filter: any
+    filter: any,
+    deleteMany: boolean = false
   ): Promise<{ deletedCount: number }> {
     const client = await this.getClient(connectionUri);
     const db = client.db(dbName);
@@ -325,7 +341,9 @@ export class MongoConnectionManager {
 
     const rawFilter = parseEJSON(typeof filter === 'string' ? filter : JSON.stringify(filter));
     const parsedFilter = normalizeFilter(rawFilter);
-    const res = await collection.deleteOne(parsedFilter);
+    const res = deleteMany
+      ? await collection.deleteMany(parsedFilter)
+      : await collection.deleteOne(parsedFilter);
     return { deletedCount: res.deletedCount };
   }
 
@@ -345,6 +363,7 @@ export class MongoConnectionManager {
     const collection = db.collection(collectionName);
 
     const parsedPipeline = parseEJSON(typeof pipeline === 'string' ? pipeline : JSON.stringify(pipeline));
+    checkDangerousOperators(parsedPipeline);
 
     const stagePreviews: { stageIndex: number; stageName: string; stageQuery: any; count: number; sampleDocs: any[] }[] = [];
 
@@ -354,7 +373,7 @@ export class MongoConnectionManager {
       const stageName = Object.keys(stageObj)[0] || `$stage_${i}`;
 
       try {
-        const previewDocs = await collection.aggregate([...subPipeline, { $limit: 10 }]).toArray();
+        const previewDocs = await collection.aggregate([...subPipeline, { $limit: 10 }], { maxTimeMS: 5000 }).toArray();
         stagePreviews.push({
           stageIndex: i,
           stageName,
@@ -374,7 +393,7 @@ export class MongoConnectionManager {
       }
     }
 
-    const finalDocs = await collection.aggregate(parsedPipeline).toArray();
+    const finalDocs = await collection.aggregate(parsedPipeline, { maxTimeMS: 10000 }).toArray();
     const executionTimeMs = Date.now() - startTime;
 
     return {

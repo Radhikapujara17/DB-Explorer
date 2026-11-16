@@ -46,7 +46,7 @@ export function DbSidebar({
 
 
         <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -79,12 +79,12 @@ export function DbSidebar({
                     <span className="truncate">{db.name}</span>
                     <div className="flex items-center gap-2">
                       {isOpen && onCreateCollection && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); onCreateCollection(db.name); }} 
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onCreateCollection(db.name); }}
                           className="text-muted-foreground hover:text-primary transition-colors"
                           title="Create Collection"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
                         </button>
                       )}
                       <ChevronDown

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Send, Copy, Check, Play, BookOpen, Key, AlertCircle, RefreshCw } from 'lucide-react';
 import { useConnection } from '../../context/ConnectionContext';
 import axios from 'axios';
@@ -33,6 +33,15 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
   const [copied, setCopied] = useState(false);
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [tempKey, setTempKey] = useState(geminiApiKey);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { MongoConnectionManager } from '../services/mongoManager.js';
+import { checkReadOnlyGuard } from './documentController.js';
 
 const mongoManager = MongoConnectionManager.getInstance();
 
@@ -40,6 +41,8 @@ export const listIndexes = async (req: Request, res: Response): Promise<void> =>
 
 export const createIndex = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (checkReadOnlyGuard(req, res)) return;
+
     const connectionUri = (req.headers['x-mongo-uri'] as string) || req.body.connectionUri;
     const { dbName, collectionName } = req.params;
     const { fieldSpecs, isUnique } = req.body;
@@ -58,6 +61,8 @@ export const createIndex = async (req: Request, res: Response): Promise<void> =>
 
 export const dropIndex = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (checkReadOnlyGuard(req, res)) return;
+
     const connectionUri = (req.headers['x-mongo-uri'] as string) || req.body.connectionUri;
     const { dbName, collectionName, indexName } = req.params;
 

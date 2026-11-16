@@ -1,11 +1,11 @@
 # 🚀 Database Explorer — High-Performance MongoDB Studio & AI Query Assistant
 
 [![Node.js](https://img.shields.io/badge/Node.js-24.x-emerald?logo=node.js)](https://nodejs.org)
-[![React](https://img.shields.io/badge/React-18-cyan?logo=react)](https://react.dev)
+[![React](https://img.shields.io/badge/React-19-cyan?logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Native_Driver-green?logo=mongodb)](https://www.mongodb.com)
 [![Google Gemini](https://img.shields.io/badge/AI-Google_Gemini_2.5_Flash-purple?logo=google)](https://ai.google.dev)
-[![Tests](https://img.shields.io/badge/Tests-8%2F8_Passing-success?logo=jest)](https://jestjs.io)
+[![Tests](https://img.shields.io/badge/Tests-9%2F9_Passing-success?logo=jest)](https://jestjs.io)
 
 **Database Explorer** is a production-grade, full-stack web application designed for exploring, querying, inspecting, and managing MongoDB databases. Built as a high-performance database management studio, it demonstrates low-level MongoDB driver connection pooling, dynamic schema auto-discovery, interactive visual query builders, a stage-by-stage aggregation pipeline visualizer, responsive multi-theme design, and an integrated **AI Natural Language Query Assistant powered by Google Gemini 2.5 Flash**.
 
@@ -13,71 +13,88 @@
 
 ## ✨ Key Features & Capabilities
 
-### 1. 🔌 Dynamic Connection Manager & Safety Guards
-- **Multi-Connection Support**: Seamlessly connect to local standalone instances (`mongodb://localhost:27017`) or cloud **MongoDB Atlas** clusters.
+### 1. 🔌 Guided Connection Form Builder & Safety Guards
+- **Dual Connection Modes**: Toggle between **Guided Form Builder** and **Raw Connection URI** input.
+- **Form Builder Fields**: Guided configuration for protocol scheme (Standard `mongodb://` vs Atlas SRV `mongodb+srv://`), Host, Port, Database, Username, Password (with show/hide eye toggle), Auth Source (`admin`), SSL/TLS, and Direct Connection.
+- **Live Generated URI Preview**: Dynamically compiles and displays the real-time URI with a 1-click **Copy URI** button.
 - **Diagnostic TCP Connection Ping**: Live TCP socket test measuring real round-trip network latency in milliseconds.
 - **Credential Masking**: Automatically masks database credentials and passwords in URI displays for privacy and security.
-- **Read-Only Safety Guard**: Visual lock preventing accidental write, update, or delete operations in production environments.
-- **Encrypted Local Storage Profiles**: Easily save and manage multiple connection profiles with custom labels and color tags.
+- **Server & Client Read-Only Safety Guards**: Visual lock and server-side HTTP 403 rejection preventing accidental write, update, or delete operations.
 
-### 2. 🎨 5 Built-in Studio Themes & Dynamic Monaco Synchronization
-- **Theme Options**:
-  - 🌿 **MongoDB Compass**: Dark Emerald (`theme-mongo`)
-  - 🌅 **Postman Sunset**: Dark Orange (`theme-postman`)
-  - 💻 **VS Code Midnight**: Dark Blue (`theme-vscode`)
-  - 👾 **Cyberpunk Neon**: Dark Pink & Cyan (`theme-cyberpunk`)
-  - ☀️ **Studio Clean**: Modern Light Mode (`theme-light`)
-- **Monaco Editor Theme Sync**: Monaco Editor automatically synchronizes syntax highlighting between `vs-dark` and `light` modes based on the active theme.
+### 2. ⚡ In-Line Table Cell Editing
+- **Double-Click to Edit**: Double-click any table cell in Table View (excluding immutable primary key `_id` and action columns) to edit values in-place.
+- **Smart Type Parsing**: Automatically preserves numeric, boolean, null, and JSON object/array data types upon saving.
+- **Keyboard Shortcuts**: Press `Enter` to commit changes immediately, or press `Escape` to cancel with zero changes.
 
-### 3. 📱 Fully Responsive Layout & Mobile Navigation
-- **Adaptive Breakpoints**: Seamless experience across desktop, tablet, and mobile screens.
-- **Mobile Drawer Navigation**: Slide-out sidebar drawer with backdrop blur accessible via header hamburger menu on screens under 1024px.
-- **Responsive Workspace**: Fluid horizontal tables, auto-collapsing panels, and touch-friendly interactive buttons.
+### 3. 🏷️ Visual BSON Type Badges
+- **Rich Type Badges**:
+  - `OID`: Purple badge for MongoDB `ObjectId` (e.g. `672b123...`).
+  - `DATE`: Amber badge for `ISODate` / timestamp strings.
+  - `INT64`: Blue badge for 64-bit long integer values (`$numberLong`).
+  - `DEC`: Emerald badge for 128-bit high-precision decimals (`$numberDecimal`).
+  - `BIN`: Rose badge for binary data (`$binary`).
+  - `ARR`: Indigo badge for arrays displaying element count (`ARR [3]`).
+  - `OBJ`: Slate badge for embedded objects (`OBJ`).
+  - `BOOL`: Pink badge for boolean values.
+  - `NUM`: Cyan badge for formatted numeric fields.
 
-### 4. 🗂️ Multi-Tab Collection Workspace Bar
-- **Tabbed Browsing**: Open multiple collections simultaneously across different databases.
-- **Active State Highlighting**: Instantly switch between collections with persistent queries, view modes, and pagination states.
-- **Tab Management**: Close individual tabs or switch workspaces effortlessly.
+### 4. 📄 Offset Pagination & Direct Page Jump
+- **Complete Pagination Toolbar**:
+  - `⏮` **First Page** (`ChevronsLeft`): Jump directly to page 1.
+  - `◀` **Previous Page** (`ChevronLeft`): Navigate back 1 page.
+  - **Page Jump Input**: Numeric text input `Page [ X ] of Y` where typing a page number and pressing Enter jumps directly to any page with boundary validation.
+  - `▶` **Next Page** (`ChevronRight`): Navigate forward 1 page.
+  - `⏭` **Last Page** (`ChevronsRight`): Jump directly to the final page.
+- **Expanded Page Limits**: Choose between `10, 25, 50, 100, 250, 500` rows per page.
+- **Formatted Range Counter**: `Showing 1–50 of 1,420 records` with locale-formatted numbers.
 
-### 5. 📑 Document Explorer Suite & Multi-View Modes
-- **Table View**: Dynamic column auto-generation with sortable headers, pagination controls, and nested object popovers.
-- **Tree View**: Interactive collapsible JSON tree viewer with BSON type badges and quick dot-path copying.
-- **Monaco Code View**: Full JSON code viewer powered by Monaco Editor with syntax highlighting and formatting.
-- **Robust CRUD Operations**:
-  - Safe document updates stripping immutable `_id` fields to eliminate `MongoServerError`.
-  - Delete operations with automatic 24-char hex string and EJSON `$oid` conversion to BSON `ObjectId`.
-- **JSON & CSV Export**: One-click dataset export for external analysis.
+### 5. 🛡️ Destructive Action Confirmation Safeguards
+- **GitHub-Style Type-to-Confirm Dialog**: Replacing risky browser alerts, destructive actions require typing confirmation (`delete` for documents or the collection name for drops).
+- **Disabled Submit Guard**: The confirmation button remains disabled until the input matches the target name exactly.
+- **Read-Only Lock**: Completely locks destruction modals when Read-Only mode is enabled.
 
-### 6. 🛠️ Visual Query Builder & Raw Code Editor
-- **Dual Query Mode**:
-  - **Visual Builder**: Dropdown-driven filter builder (`$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$regex`, `$in`, `$exists`) with quick-field tags.
-  - **Raw Editor**: Monaco Editor for `Filter`, `Projection`, and `Sort` clauses with `Ctrl+Enter` shortcut execution.
-- **Query Benchmarking**: Live execution time calculation in milliseconds.
+### 6. 🚀 60fps Table Virtualization
+- **Windowed Rendering**: Integrated `@tanstack/react-virtual` renders only the visible rows in the viewport plus overscan buffers.
+- **Padding Row Pattern**: Preserves native HTML `<table>`, `<thead>`, and `<tbody>` formatting, auto-calculated column widths, and sticky table headers without CSS grid misalignment.
+- **Butter-Smooth Scrolling**: Silky 60fps scrolling even when rendering large datasets with 500 rows per page.
 
-### 7. ⚡ Aggregation Pipeline Visualizer & Stage Inspector
-- **Stage-by-Stage Construction**: Easily append pipeline stages (`$match`, `$group`, `$project`, `$sort`, `$lookup`, `$unwind`, `$limit`).
-- **Live Stage Inspector**: Inspect document output after *each individual stage* to debug complex aggregation workflows.
-- **Distribution Charting**: Integrated Recharts bar charts auto-generated for numeric `$group` stage results.
+### 7. 🔒 Server-Side Query Execution Guards
+- **Query Timeout Enforcement**: All queries and document counts enforce `maxTimeMS(5000)` to eliminate cluster-hanging unbounded operations. Aggregation pipelines enforce `maxTimeMS(10000)`.
+- **Arbitrary Code Execution Blacklist**: Server recursively blocks dangerous operators containing arbitrary JavaScript execution risks (`$where`, `$function`, `$accumulator`).
+- **Backend Read-Only Enforcement**: Mutation endpoints (`insert`, `update`, `delete`, `createCollection`, `dropCollection`) strictly enforce `x-readonly` headers and return **HTTP 403 Forbidden**.
 
-### 8. 📊 Schema Auto-Discovery & Index Management
-- **Automatic Schema Inference**: Samples top documents (10, 50, 100, 200, or 500) to automatically infer field names, nested properties, BSON types (`ObjectId`, `Date`, `Array`, `Number`, `String`), and nullability ratios.
-- **Live Index Inspector**: Inspect index names, key directions, unique constraints, and drop or create new indexes directly from the UI.
+### 8. 📦 Advanced Data Export Wizard
+- **Multiple Formats**:
+  - **CSV / Excel**: Includes optional Excel UTF-8 BOM (`\uFEFF`) to prevent garbled international characters, customizable delimiters (Comma `,`, Semicolon `;`, Tab `\t`), and quote escaping.
+  - **NDJSON (Lines)**: Newline-delimited JSON objects compatible with `mongoimport` and cloud data pipelines.
+  - **JSON Array**: Formatted with 2-space pretty-print indentation or minified.
+- **Scope Selection**: Export Current Page View vs Selected Rows Only (with selection count badge).
+- **Field Selection**: Interactive checkboxes to include or exclude specific fields with 1-click Select All / Deselect All.
+- **Live Output Preview**: Preview the first 2 records formatted in real-time before downloading.
 
-### 9. 📈 Live Cluster Diagnostics & Query Execution Plans
-- **Explain Query Execution Plan**: Inspect winning execution stages, total documents examined vs returned, execution time, and index keys used.
-- **Server Diagnostics**: Real-time MongoDB cluster health displaying server host, version, uptime, active connections, and live OpCounters (inserts, queries, updates, deletes).
+### 9. 📥 In-Browser Data Import Wizard
+- **3-Step Guided Wizard**:
+  - **Step 1: Upload File**: Drag-and-drop zone accepting `.json` (array), `.csv` (comma-separated), or `.ndjson`.
+  - **Step 2: Preview & Settings**: Shows total parsed documents, sample JSON preview of the first 2 documents, duplicate conflict handling (`Skip duplicates` vs `Abort on error`), and batch size selection (`50`, `200`, `500`).
+  - **Step 3: Progress & Summary**: Live progress bar showing `Imported X of Y (Z%)` with a final report of inserted and skipped records. Automatically refreshes collection metrics on completion.
 
-### 10. 🔖 Saved Query Snippets & Execution History
-- **Saved Snippets**: Bookmark frequently used queries with custom titles and collection scoping.
-- **Execution History**: Chronological log of recent queries with execution timestamps and 1-click re-run functionality.
+### 10. 🧭 TanStack Router Frontend Architecture
+- **Typed Deep-Linkable Routes**:
+  - `/`: Document Explorer (Query Builder, Table, Cards, Tree, JSON views).
+  - `/aggregation`: Multi-Stage Aggregation Pipeline Visualizer with live stage inspector and distribution charts.
+- **Browser History Support**: Full browser Back and Forward button support between Document Explorer and Aggregation Visualizer.
+- **State Persistence**: Active MongoDB connection, profile, latency ping, tabs, and query state seamlessly persist across route switches.
 
-### 11. ⌨️ Command Palette (`Ctrl + K`)
-- Fast keyboard shortcut menu to quickly switch databases, toggle between Document Explorer and Aggregation Pipeline, or launch the AI assistant.
+---
 
-### 12. 🤖 AI Natural Language Query Assistant (Google Gemini 2.5 Flash)
-- **Natural Language Translation**: Converts plain English prompts (e.g. *"Find active users created in 2024 with total spend over 500 sorted by spend"*) into executable MongoDB filter objects or aggregation pipelines.
-- **Custom API Key Support**: Configure a custom Google Gemini API key directly from the header popover or fallback to the server environment key.
-- **Query Explainer**: Step-by-step plain English breakdown of any query along with performance tips and indexing advice.
+## 🎨 5 Built-in Studio Themes
+- 🌿 **MongoDB Compass**: Dark Emerald (`theme-mongo`)
+- 🌅 **Postman Sunset**: Dark Orange (`theme-postman`)
+- 💻 **VS Code Midnight**: Dark Blue (`theme-vscode`)
+- 👾 **Cyberpunk Neon**: Dark Pink & Cyan (`theme-cyberpunk`)
+- ☀️ **Studio Clean**: Modern Light Mode (`theme-light`)
+
+Monaco Editor automatically synchronizes syntax highlighting between `vs-dark` and `light` modes based on the active theme.
 
 ---
 
@@ -86,7 +103,7 @@
 ```
 DB Explorer/
 ├── package.json                          # Monorepo orchestration scripts (dev, build, test, seed)
-├── issues.md                             # Comprehensive QA audit & resolution verification report
+├── PROJECT_IMPROVEMENT_PLAN.md           # Comprehensive 10-feature improvement and architecture plan
 ├── server/                               # Express Backend (TypeScript + Native Mongo Driver)
 │   ├── src/
 │   │   ├── config/                       # Environment & Gemini configuration
@@ -106,18 +123,21 @@ DB Explorer/
     │   │   ├── Aggregation/              # AggregationBuilder & stage inspector
     │   │   ├── AIAssistant/              # AIAssistantDrawer (Gemini 2.5 Flash)
     │   │   ├── CommandPalette/           # CommandPalette (Ctrl+K)
-    │   │   ├── Connection/               # ConnectionModal (with live TCP ping test)
-    │   │   ├── DocumentViewer/           # DocumentViewer (Table/Tree/JSON) & DocumentModal
+    │   │   ├── Common/                   # ConfirmDestructionModal
+    │   │   ├── Connection/               # ConnectionModal (Guided Form Builder & Raw URI)
+    │   │   ├── DocumentViewer/           # DocumentViewer (Virtual Table/Tree/JSON) & DocumentModal
+    │   │   ├── Export/                   # ExportModal (CSV with BOM, NDJSON, JSON array)
     │   │   ├── Header/                   # Header & WorkspaceTabBar
+    │   │   ├── Import/                   # ImportWizardModal (Drag & drop batch importer)
     │   │   ├── Performance/              # ExplainPlanModal & ServerStatusModal
     │   │   ├── QueryBuilder/             # QueryBuilder & QueryHistoryDrawer
     │   │   ├── Schema/                   # SchemaInspectorModal & CreateCollectionModal
-    │   │   └── Sidebar/                  # Responsive Sidebar (Desktop & Mobile Drawer)
+    │   │   └── Sidebar/                  # Responsive Sidebar with collection drop safeguard
     │   ├── context/                      # ConnectionContext (State, Profiles, Tabs, History)
-    │   ├── routes/                       # TanStack Start unified routing
+    │   ├── routes/                       # TanStack Start unified routing (/ and /aggregation)
     │   ├── App.tsx                       # Main Studio application shell
     │   ├── main.tsx                      # Vite React client entry
-    │   └── index.css                     # Multi-theme CSS variables & studio styles
+    │   └── index.css                     # Multi-theme CSS variables, BSON badges & studio styles
     ├── tsconfig.json
     └── package.json
 ```
@@ -127,7 +147,7 @@ DB Explorer/
 ## 🛠️ Quick Start & Installation
 
 ### Prerequisites
-- **Node.js**: v18.x or higher (tested on Node.js 24)
+- **Node.js**: v18.x or higher (tested on Node.js 22 & 24)
 - **MongoDB**: Local standalone MongoDB daemon (`mongodb://127.0.0.1:27017`) or cloud MongoDB Atlas connection URI.
 
 ---
@@ -141,13 +161,8 @@ npm run install:all
 
 Or install individually:
 ```bash
-# Root dependencies
 npm install
-
-# Server dependencies
 npm install --prefix server
-
-# Client dependencies
 npm install --prefix client
 ```
 
@@ -165,14 +180,14 @@ npm run seed
 
 ### 3. Run Development Servers
 
-Start both the backend server (Port 5000) and frontend client (Port 3000) concurrently:
+Start both the backend server (Port 5000) and frontend client (Port 8080) concurrently:
 ```bash
 npm run dev
 ```
 
 Open your web browser and navigate to:
 ```
-http://localhost:3000
+http://localhost:8080
 ```
 
 ---
@@ -190,19 +205,7 @@ npm test
 - ✅ Insert new documents with EJSON support
 - ✅ Delete documents with **BSON `ObjectId` conversion** (hex string & `$oid` matching)
 - ✅ EJSON Extended JSON serialization/deserialization
-
----
-
-## 🔐 Environment Variables (.env)
-
-Create an optional `.env` file in the `server` directory:
-```env
-PORT=5000
-DEFAULT_MONGO_URI=mongodb://127.0.0.1:27017
-GEMINI_API_KEY=your_google_gemini_api_key_here
-```
-
-> **Note:** If `GEMINI_API_KEY` is not provided in `.env`, users can still configure their custom Gemini API key directly in the web UI header popover.
+- ✅ Server-side query execution guards (`maxTimeMS`, operator blacklist, read-only rejection)
 
 ---
 

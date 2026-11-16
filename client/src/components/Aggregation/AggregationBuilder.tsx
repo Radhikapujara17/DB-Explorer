@@ -91,15 +91,15 @@ export const AggregationBuilder: React.FC = () => {
   });
 
   return (
-    <div className="db-content-pane">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Top Header & Stage Palette */}
-      <div className="db-toolbar">
+      <div className="db-toolbar flex-wrap gap-2">
         <div className="db-row-start">
           <Layers className="db-icon-sm db-icon-purple" />
           <h2 className="db-text-sm db-font-bold db-text-primary">Aggregation Pipeline Visualizer</h2>
         </div>
 
-        <div className="db-row-end">
+        <div className="db-row-end flex-wrap gap-1.5">
           <span className="db-text-xs db-text-muted">Add Stage:</span>
           {Object.keys(STAGE_TEMPLATES).map(type => (
             <button
