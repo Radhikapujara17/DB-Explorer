@@ -1,13 +1,23 @@
-# 🚀 Database Explorer — High-Performance MongoDB Studio & AI Query Assistant
+# 🚀 MongoLens — Next-Gen MongoDB Web GUI, Query Studio & Compass Alternative
 
-[![Node.js](https://img.shields.io/badge/Node.js-24.x-emerald?logo=node.js)](https://nodejs.org)
-[![React](https://img.shields.io/badge/React-19-cyan?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Native_Driver-green?logo=mongodb)](https://www.mongodb.com)
-[![Google Gemini](https://img.shields.io/badge/AI-Google_Gemini_2.5_Flash-purple?logo=google)](https://ai.google.dev)
-[![Tests](https://img.shields.io/badge/Tests-9%2F9_Passing-success?logo=jest)](https://jestjs.io)
+<p align="center">
+  <img src="client/public/logo.svg" alt="MongoLens Studio Logo" width="340" />
+</p>
 
-**Database Explorer** is a production-grade, full-stack web application designed for exploring, querying, inspecting, and managing MongoDB databases. Built as a high-performance database management studio, it demonstrates low-level MongoDB driver connection pooling, dynamic schema auto-discovery, interactive visual query builders, a stage-by-stage aggregation pipeline visualizer, responsive multi-theme design, and an integrated **AI Natural Language Query Assistant powered by Google Gemini 2.5 Flash**.
+<p align="center">
+  <strong>High-Performance Visual Web GUI for MongoDB with In-Line Editing, Aggregation Pipeline Studio & Gemini AI Query Copilot</strong>
+</p>
+
+<p align="center">
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-24.x-emerald?logo=node.js" alt="Node.js" /></a>
+  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19-cyan?logo=react" alt="React" /></a>
+  <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript" alt="TypeScript" /></a>
+  <a href="https://www.mongodb.com"><img src="https://img.shields.io/badge/MongoDB-Native_Driver-green?logo=mongodb" alt="MongoDB" /></a>
+  <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/AI-Google_Gemini_2.5_Flash-purple?logo=google" alt="Google Gemini" /></a>
+  <a href="https://jestjs.io"><img src="https://img.shields.io/badge/Tests-9%2F9_Passing-success?logo=jest" alt="Tests" /></a>
+</p>
+
+**MongoLens** is a modern, production-grade web-based MongoDB GUI and query studio designed as a lightweight, zero-install alternative to MongoDB Compass. Engineered for high performance and visual clarity, it delivers native driver connection pooling, dynamic schema discovery, spreadsheet-style in-line editing, multi-stage aggregation pipeline visualization, zero-FOUC multi-theme hydration, and an integrated **AI Natural Language Query Assistant powered by Google Gemini 2.5 Flash**.
 
 ---
 

@@ -77,8 +77,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5.0" },
+      { name: "theme-color", content: "#10b981" },
+      {
+        name: "description",
+        content:
+          "MongoLens is a high-performance web-based MongoDB GUI and query studio featuring in-line editing, aggregation pipeline visualizer, BSON type badges, and AI query copilot.",
+      },
+      {
+        name: "keywords",
+        content:
+          "mongodb gui, web mongodb client, mongodb compass alternative, mongodb studio, mongodb query builder, mongodb aggregation visualizer, bson viewer, mongolens",
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "MongoLens Studio" },
+      { property: "og:image", content: "/og-image.svg" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/og-image.svg" },
     ],
     links: [
       {
@@ -89,9 +104,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
     ],
   }),
 

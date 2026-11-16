@@ -10,14 +10,98 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <title>Database Explorer | High Performance MongoDB Studio & AI Assistant</title>
+
+    <!-- Primary SEO Title & Metadata -->
+    <title>MongoLens — Next-Gen MongoDB Web GUI, Query Studio &amp; Compass Alternative</title>
+    <meta name="title" content="MongoLens — Next-Gen MongoDB Web GUI, Query Studio &amp; Compass Alternative" />
+    <meta
+      name="description"
+      content="MongoLens is a high-performance web-based MongoDB GUI and query studio. Features in-line editing, aggregation pipeline visualizer, BSON type badges, schema discovery, and AI natural language query assistant."
+    />
+    <meta
+      name="keywords"
+      content="mongodb gui, web mongodb client, mongodb compass alternative, mongodb studio, mongodb query builder, mongodb aggregation visualizer, bson viewer, inline mongodb editor, mongolens, mongodb browser client"
+    />
+    <meta name="author" content="MongoLens Team" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://mongolens.dev/" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mongolens.dev/" />
+    <meta property="og:site_name" content="MongoLens Studio" />
+    <meta property="og:title" content="MongoLens — Next-Gen MongoDB Web GUI &amp; Query Studio" />
+    <meta
+      property="og:description"
+      content="Explore MongoDB visually with MongoLens: in-line spreadsheet editing, visual query builder, multi-stage aggregation pipeline visualizer, and Gemini AI query copilot."
+    />
+    <meta property="og:image" content="/og-image.svg" />
+    <meta property="og:image:alt" content="MongoLens Studio Preview" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://mongolens.dev/" />
+    <meta name="twitter:title" content="MongoLens — Next-Gen MongoDB Web GUI &amp; Query Studio" />
+    <meta
+      name="twitter:description"
+      content="High-performance web-based MongoDB GUI: in-line cell editing, visual query builder, aggregation pipeline inspector, and AI natural language assistant."
+    />
+    <meta name="twitter:image" content="/og-image.svg" />
+
+    <!-- Icons & PWA Web Manifest -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#10b981" />
+    <meta name="application-name" content="MongoLens" />
+    <meta name="apple-mobile-web-app-title" content="MongoLens" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Structured Data (JSON-LD) for Search Engines -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "MongoLens",
+        "alternateName": "MongoLens Studio",
+        "operatingSystem": "All (Web Browser)",
+        "applicationCategory": "DeveloperApplication",
+        "description": "High-performance web-based MongoDB GUI and query studio featuring visual query building, aggregation pipeline visualization, in-line table editing, and Gemini AI query copilot.",
+        "url": "https://mongolens.dev/",
+        "image": "https://mongolens.dev/og-image.svg",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Web-Based MongoDB GUI & Compass Alternative",
+          "Visual Query Builder with Relaxed Shell Syntax",
+          "Multi-Stage Aggregation Pipeline Visualizer",
+          "In-Line Spreadsheet-Style Table Cell Editing",
+          "AI Natural Language Query Assistant",
+          "Interactive Schema Discovery & Type Badges",
+          "CSV, NDJSON, and JSON Array Export/Import",
+          "Zero-FOUC Multi-Theme System"
+        ]
+      }
+    </script>
+
+    <!-- Google Fonts Preconnect & Styles -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body class="bg-[var(--bg-dark)] text-[var(--text-primary)] antialiased overflow-x-hidden">
+    <noscript>
+      <div style="padding: 2rem; font-family: sans-serif; background: #07090e; color: #f8fafc; text-align: center;">
+        <h1>MongoLens — Next-Gen MongoDB Web GUI &amp; Query Studio</h1>
+        <p>MongoLens requires JavaScript to provide high-performance visual query building, interactive aggregation pipelines, in-line editing, and schema inspection for MongoDB databases.</p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

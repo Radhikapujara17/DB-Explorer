@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <defs>
+    <linearGradient id="mlGlowGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="50%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+    <linearGradient id="mlTextGrad" x1="140" y1="20" x2="250" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="60%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+    <linearGradient id="mlBgGrad" x1="8" y1="8" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <filter id="mlShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#10b981" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- ================= LOGO EMBLEM (Left: 0..80) ================= -->
+  <g transform="translate(8, 8)">
+    <!-- Outer Emblem Squircle Box -->
+    <rect x="0" y="0" width="64" height="64" rx="16" fill="url(#mlBgGrad)" stroke="url(#mlGlowGrad)" stroke-width="2" filter="url(#mlShadow)" />
+    
+    <!-- Focus Circles -->
+    <circle cx="32" cy="32" r="22" stroke="rgba(16,185,129,0.2)" stroke-width="1" stroke-dasharray="3 3" />
+    <circle cx="32" cy="32" r="26" stroke="rgba(6,182,212,0.12)" stroke-width="1" />
+
+    <!-- Database Storage Base Disks -->
+    <ellipse cx="32" cy="44" rx="16" ry="5.5" fill="#047857" opacity="0.8" />
+    <path d="M16 44 v4 c0 3 7.2 5.5 16 5.5 s16 -2.5 16 -5.5 v-4 Z" fill="#065f46" />
+    <ellipse cx="32" cy="48" rx="16" ry="5.5" fill="none" stroke="#34d399" stroke-width="0.8" opacity="0.6" />
+
+    <ellipse cx="32" cy="36" rx="16" ry="5.5" fill="#059669" opacity="0.9" />
+    <path d="M16 36 v4 c0 3 7.2 5.5 16 5.5 s16 -2.5 16 -5.5 v-4 Z" fill="#047857" />
+    <ellipse cx="32" cy="40" rx="16" ry="5.5" fill="none" stroke="#6ee7b7" stroke-width="0.8" opacity="0.7" />
+
+    <!-- Optical Lens Focus Aperture -->
+    <circle cx="32" cy="26" r="14" fill="none" stroke="url(#mlGlowGrad)" stroke-width="2.5" />
+    <circle cx="32" cy="26" r="10" fill="rgba(6,182,212,0.2)" stroke="#38bdf8" stroke-width="1" />
+
+    <!-- Refractive Core Prism -->
+    <polygon points="32,17 39,26 32,35 25,26" fill="url(#mlGlowGrad)" />
+    <polygon points="32,17 39,26 32,26" fill="#a7f3d0" opacity="0.85" />
+    <polygon points="32,26 39,26 32,35" fill="#38bdf8" opacity="0.75" />
+    <polygon points="25,26 32,26 32,35" fill="#059669" opacity="0.9" />
+    <polygon points="25,26 32,17 32,26" fill="#6ee7b7" opacity="0.6" />
+
+    <circle cx="32" cy="26" r="2" fill="#ffffff" />
+  </g>
+
+  <!-- ================= WORDMARK TYPOGRAPHY (Right) ================= -->
+  <!-- "Mongo" in Crisp Modern White -->
+  <text x="86" y="44" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="28" font-weight="800" fill="#f8fafc" letter-spacing="-0.5">Mongo</text>
+  
+  <!-- "Lens" in Glowing Cyan/Emerald Gradient -->
+  <text x="178" y="44" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="url(#mlTextGrad)" letter-spacing="-0.5">Lens</text>
+  
+  <!-- Sub-Badge: "STUDIO PRO" -->
+  <rect x="86" y="52" width="76" height="18" rx="5" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.3)" stroke-width="1" />
+  <text x="94" y="64" font-family="'Fira Code', monospace" font-size="10" font-weight="700" fill="#34d399" letter-spacing="1.5">STUDIO</text>
+
+  <!-- Tagline Preview -->
+  <text x="168" y="64" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="500" fill="#94a3b8">Web MongoDB GUI</text>
+</svg>

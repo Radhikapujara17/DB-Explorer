@@ -1,0 +1,24 @@
+{
+  "short_name": "MongoLens",
+  "name": "MongoLens — Next-Gen MongoDB Web GUI & Query Studio",
+  "description": "High-performance visual web GUI for MongoDB: in-line editing, aggregation pipeline builder, visual query builder, schema inspector, and AI query copilot.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "16x16 32x32 48x48"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#07090e",
+  "theme_color": "#10b981",
+  "display": "standalone",
+  "orientation": "any",
+  "categories": ["developer", "productivity", "utilities"]
+}

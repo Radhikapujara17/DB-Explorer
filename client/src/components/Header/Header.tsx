@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from '@tanstack/react-router';
 import { Database, Shield, ShieldAlert, Sparkles, Key, Wifi, RefreshCw, Menu, Layers, Palette, Check } from 'lucide-react';
 import { useConnection } from '../../context/ConnectionContext';
+import { MongoLensLogo } from './MongoLensLogo';
 
 interface HeaderProps {
   onOpenConnectionModal: () => void;
@@ -73,17 +75,13 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        <div className="db-flex db-items-center gap-2">
-          <div className="db-header-logo">
-            <Database className="w-4 h-4 text-slate-950 font-bold" />
-          </div>
-          <div>
-            <h1 className="db-header-title db-flex db-items-center gap-1">
-              DB Explorer
-              <span className="db-header-badge">v1.0 Pro</span>
-            </h1>
-          </div>
-        </div>
+        <Link
+          to="/"
+          className="hover:opacity-90 transition-opacity"
+          title="MongoLens — Next-Gen MongoDB Web GUI & Query Studio"
+        >
+          <MongoLensLogo size="md" />
+        </Link>
 
         <div className="db-hidden-sm w-1 h-4 bg-[var(--border-color)] mx-1" />
 
